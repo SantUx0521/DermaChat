@@ -11,6 +11,16 @@
 <body>
     <main class="main">
         <div class="top">
+            <div class="logo">
+                <div class="logo-img"></div>
+            </div>
+
+            <form method="get" action="#" class="search-form">
+                <div class="search">
+                    <input type="text" name="q" placeholder="Preguntas frecuentes...">
+                </div>
+            </form>
+
             <div class="nav" id="nav">
                 <div class="signup">
                     {% if user.is_authenticated %}
@@ -41,8 +51,8 @@
                     </div>
                     {% else %}
                     <ul>
-                        <li><a href="#">Iniciar Sesión</a></li>
-                        <li><a href="#">Registrarse</a></li>
+                        <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
+                        <li><a href="{% url 'register' %}">Registrarse</a></li>
                     </ul>
                     {% endif %}
                 </div>
@@ -52,16 +62,11 @@
         <div class="center">
             <div>
                 <h1 class="h1">Derma Chat</h1>
-                {% if user.is_authenticated %}
-                <p>Bienvenido {{ user.username }}, comienza tu análisis de acne.</p>
-                {% else %}
-                <p>Chatea con nosotros para verificar tu acne</p>
-                {% endif %}
             </div>
             <form method="post" action="#" enctype="multipart/form-data">
                 {% csrf_token %}
-                <button type="submit" class="search-button">
-                    <i class="fa fa-comments" aria-hidden="true"></i> Charlemos
+                <button type="submit" class="go-button">
+                    <i class="fa fa-comments" aria-hidden="true"></i> CHARLEMOS
                 </button>
             </form>
         </div>
