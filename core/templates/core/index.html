@@ -12,28 +12,8 @@
     <main class="main">
         <div class="top">
             <div class="nav" id="nav">
-                <!-- Logo de casa -->
-                <a href="#" class="home-icon" title="Volver al inicio">
-                    <i class="fas fa-home"></i>
-                </a>
-
-                <section class="section">
-                    <h2>¿Quiénes somos?</h2>
-                    <p>
-                        
-                    </p>
-                </section>
-
-                <section class="section alt">
-                    <h2>¿Cómo funciona?</h2>
-                    <p>
-                        
-                    </p>
-                </section>
-
                 <div class="signup">
                     {% if user.is_authenticated %}
-                    <!-- Botón Account -->
                     <div class="account-dropdown">
                         <button class="account-btn" id="accountBtn">
                             <span class="account-text">Account</span>
@@ -67,45 +47,64 @@
                     {% endif %}
                 </div>
             </div>
+        </div>
 
-            <div class="center">
-                <div>
-                    <h1 class="h1">Derma Chat</h1>
-                    {% if user.is_authenticated %}
-                    <p>Bienvenido {{ user.username }}, comienza tu análisis de acne.</p>
-                    {% else %}
-                    <p>Sube una foto para verificar tu acne</p>
-                    {% endif %}
-                </div>
-                <form method="post" action="#" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <button type="submit" class="search-button">
-                        <i class="fa fa-upload" aria-hidden="true"></i> 
-                    </button>
-                </form>
+        <div class="center">
+            <div>
+                <h1 class="h1">Derma Chat</h1>
+                {% if user.is_authenticated %}
+                <p>Bienvenido {{ user.username }}, comienza tu análisis de acne.</p>
+                {% else %}
+                <p>Sube una foto para verificar tu acne</p>
+                {% endif %}
             </div>
+            <form method="post" action="#" enctype="multipart/form-data">
+                {% csrf_token %}
+                <button type="submit" class="search-button">
+                    <i class="fa fa-comments" aria-hidden="true"></i> Charlemos
+                </button>
+            </form>
+        </div>
+
+        <div class="bottom">
+            <section class="section">
+                <h2>¿Quiénes somos?</h2>
+                <p>
+                    Somos una plataforma dedicada a ofrecer un analisis sobre el acne mediante inteligencia artificial...
+                </p>
+            </section>
+
+            <section class="section alt">
+                <h2>¿Cómo funciona?</h2>
+                <p>
+                    Para comenzar debes hablar con nuestro chatbot...
+                </p>
+            </section>
+
+            <section class="section">
+                <h2>Informacion utilizada</h2>
+                <p>
+                    ...
+                </p>
+            </section>
         </div>
     </main>
 
     <script src="{% static 'core/js/main.js' %}"></script>
     <script>
-        // Script para menú desplegable de Account
         document.addEventListener('DOMContentLoaded', function() {
             const accountBtn = document.getElementById('accountBtn');
             const dropdownMenu = document.getElementById('dropdownMenu');
-            let isDropdownOpen = false;
-
+            
             if (accountBtn && dropdownMenu) {
                 accountBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     dropdownMenu.classList.toggle('show');
-                    isDropdownOpen = !isDropdownOpen;
                 });
 
                 document.addEventListener('click', function(e) {
                     if (!accountBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
                         dropdownMenu.classList.remove('show');
-                        isDropdownOpen = false;
                     }
                 });
             }
