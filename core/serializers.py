@@ -1,19 +1,20 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from django.core.mail import send_mail
-from .models import (
-    Usuario, Gimnasio, FichaBiometrica, ClienteGimnasio, Favorito,
-    Rutina, Maquina, Inventario,Reseña
-)
+from .models import Usuario, Conversacion, Mensaje
+
 
 # ------------------------
-# Usuario (Registro Cliente)
+# USUARIO SERIALIZER
 # ------------------------
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
-        fields = ['id', 'email', 'nombre', 'direccion', 'telefono', 'es_dueño', 'password']
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = ['id','email','nombre','password','edad','foto_perfil','email_verificado','es_premium',]
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'email_verificado': {'read_only': True},
+        }
 
     def validate_email(self, value):
         if Usuario.objects.filter(email=value).exists():
@@ -23,106 +24,43 @@ class UsuarioSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['password'] = make_password(validated_data['password'])
         usuario = Usuario.objects.create(**validated_data)
+
+        # Envío de correo opcional (si usas SMTP configurado)
         send_mail(
             'Confirmación de Registro',
-            'Gracias por registrarte en nuestro sistema.',
-            'Gimnasio Web',
+            'Gracias por registrarte en DermaChat.',
+            'DermaChat <noreply@dermachat.com>',
             [usuario.email],
-            fail_silently=False,
+            fail_silently=True,
         )
         return usuario
 
+
 # ------------------------
-# Gimnasio
+# MENSAJE SERIALIZER
 # ------------------------
-class GimnasioSerializer(serializers.ModelSerializer):
+class MensajeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Gimnasio
-        fields = '__all__'
+        model = Mensaje
+        fields = ['id','remitente','contenido','creado_en',]
+        read_only_fields = ['id', 'creado_en']
 
 
 # ------------------------
-# Favorito
+# CONVERSACION SERIALIZER
 # ------------------------
-class FavoritoSerializer(serializers.ModelSerializer):
+class ConversacionSerializer(serializers.ModelSerializer):
+    mensajes = MensajeSerializer(many=True, read_only=True)
+    usuario = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
-        model = Favorito
-        fields = '__all__'
-        validators = [
-            serializers.UniqueTogetherValidator(
-                queryset=Favorito.objects.all(),
-                fields=['usuario', 'gimnasio'],
-                message="Ya está marcado como favorito."
-            )
-        ]
+        model = Conversacion
+        fields = ['id','usuario','titulo','creada_en','mensajes',]
+        read_only_fields = ['id', 'creada_en', 'mensajes']
 
-
-# ------------------------
-# Rutinas
-# ------------------------
-class RutinaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rutina
-        fields = '__all__'
-
-
-# ------------------------
-# Inventario
-# ------------------------
-class InventarioSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Inventario
-        fields = '__all__'
-
-
-# ------------------------
-# Maquinas
-# ------------------------
-class MaquinaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Maquina
-        fields = '__all__'
-
-# ------------------------
-# Maquinas
-# ------------------------
-
-class ReseñaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Reseña
-        fields = '__all__'
-        read_only_fields = ['usuario']  # <- esto es lo importante
-
-    def validate(self, data):
-        # Verificar que no exista ya una reseña del mismo usuario para el mismo gimnasio
-        usuario = self.context['request'].user
-        gimnasio = data.get('gimnasio')
-        
-        # Si es una actualización, excluir la reseña actual
-        if self.instance:
-            existing_resena = Reseña.objects.filter(
-                usuario=usuario, 
-                gimnasio=gimnasio
-            ).exclude(pk=self.instance.pk).first()
-        else:
-            existing_resena = Reseña.objects.filter(
-                usuario=usuario, 
-                gimnasio=gimnasio
-            ).first()
-        
-        if existing_resena:
-            raise serializers.ValidationError(
-                "Ya has dejado una reseña para este gimnasio. Solo puedes dejar una reseña por gimnasio."
-            )
-        
-        return data
-
-    def validate_estrellas(self, value):
-        if value < 1 or value > 5:
-            raise serializers.ValidationError("La calificación debe estar entre 1 y 5 estrellas.")
-        return value
-
-    def validate_texto(self, value):
-        if value and len(value) > 500:
-            raise serializers.ValidationError("El comentario no puede exceder los 500 caracteres.")
-        return value
+    def create(self, validated_data):
+        # Asignar usuario desde la vista (request.user)
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            validated_data['usuario'] = request.user
+        return super().create(validated_data)
