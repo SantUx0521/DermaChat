@@ -1,10 +1,7 @@
 import pytest
 from django.test import TestCase
 from rest_framework.test import APIClient,APITestCase
-from core.models import Usuario
-from .models import Usuario, Gimnasio, Maquina, FichaBiometrica, ClienteGimnasio, Favorito
 from django.db.utils import IntegrityError
-from core.models import Usuario
 from django.contrib.auth.hashers import make_password
 from django.urls import reverse
 from rest_framework.authtoken.models import Token

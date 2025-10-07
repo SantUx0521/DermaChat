@@ -76,50 +76,7 @@ class LoginView(APIView):
 def login_page(request):
     return render(request, 'core/login.html')
 
-@ensure_csrf_cookie
 def register_page(request):
-    if request.method == 'POST':
-        tipo = request.POST.get('tipo_usuario')
-        nombre = request.POST['nombre']
-        email = request.POST['email']
-        password = request.POST['password']
-        confirm_password = request.POST.get('confirm_password')
-        
-        # Validar que las contraseñas coincidan
-        if password != confirm_password:
-            return render(request, 'core/register.html', {'error': 'Las contraseñas no coinciden'})
-        
-        # Validar que el correo no esté registrado
-        if Usuario.objects.filter(email=email).exists():
-            return render(request, 'core/register.html', {'error': 'Este correo electrónico ya está registrado'})
-        
-        # Generar token de verificación
-        token = secrets.token_urlsafe(32)
-        fecha_expiracion = timezone.now() + timedelta(hours=24)
-        
-        usuario = Usuario.objects.create(
-            nombre=nombre,
-            email=email,
-            password=make_password(password),
-            token_verificacion=token,
-            fecha_token=fecha_expiracion,
-            es_dueño=(tipo == 'dueño')
-        )
-        
-        # Enviar email de verificación
-        send_mail(
-            'Verifica tu cuenta en GMSearch',
-            f'Por favor, verifica tu cuenta haciendo clic en el siguiente enlace:\n\n'
-            f'http://{request.get_host()}/verificar-email/{token}/\n\n'
-            f'Este enlace expirará en 24 horas.',
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-        )
-        
-        return render(request, 'core/verificacion_pendiente.html')
-    if 'register-own' in request.path: #en caso de que el registro venga por parte de un dueño de gimnasio toma los datos del html correspondiente
-        return render(request, 'core/registerOwn.html')
     return render(request, 'core/register.html')
 
 

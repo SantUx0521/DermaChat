@@ -11,144 +11,105 @@
 <body>
     <main class="main">
         <div class="top">
-            <div class="nav" id="nav">
-                <!-- Logo de casa para volver al inicio (mismo estilo que search.html) -->
-                <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
-                    <i class="fas fa-home"></i>
-                </a>
-                
-                <!-- Botón toggle para mostrar/ocultar opciones -->
-                <button class="toggle-options" id="toggleOptions">O></button>
-                
-                <!-- Opciones de búsqueda (ocultas por defecto) -->
-                <ul class="links desktop-links" id="searchOptions">
-                    <li><a href="{% url 'buscar_gimnasios' %}?orden=productos">Más productos</a></li>
-                    <li><a href="{% url 'buscar_gimnasios' %}?orden=precio">Precios más bajos</a></li>
-                    <li><a href="{% url 'buscar_gimnasios' %}?orden=reseñas">Mejores reseñas</a></li>
-                    <li><a href="{% url 'buscar_gimnasios' %}?orden=maquinas">Mayor cantidad de máquinas</a></li>
-                </ul>
+            <div class="logo">
+                <div class="logo-img"></div>
             </div>
-            
-            <div class="signup">
-                {% if user.is_authenticated %}
-                <!-- Botón Account unificado -->
-                <div class="account-dropdown">
-                    <button class="account-btn" id="accountBtn">
-                        <span class="account-text">Account</span>
-                        <div class="account-avatar">
-                            {% if user.es_dueño %}
-                                {% for gimnasio in user.gimnasios.all %}
-                                    {% if gimnasio.imagen %}
-                                        <img src="{{ gimnasio.imagen.url }}" alt="Imagen del gimnasio">
-                                    {% else %}
-                                        <i class="fas fa-dumbbell"></i>
-                                    {% endif %}
-                                {% empty %}
-                                    <i class="fas fa-user"></i>
-                                {% endfor %}
-                            {% else %}
+
+            <form method="get" action="#" class="search-form">
+                <div class="search">
+                    <input type="text" name="q" placeholder="Preguntas frecuentes...">
+                </div>
+            </form>
+
+            <div class="nav" id="nav">
+                <div class="signup">
+                    {% if user.is_authenticated %}
+                    <div class="account-dropdown">
+                        <button class="account-btn" id="accountBtn">
+                            <span class="account-text">Account</span>
+                            <div class="account-avatar">
                                 {% if user.foto_perfil %}
                                     <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil">
                                 {% else %}
                                     <i class="fas fa-user"></i>
                                 {% endif %}
-                            {% endif %}
+                            </div>
+                        </button>
+                        <div class="dropdown-menu" id="dropdownMenu">
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-user"></i>
+                                Ver perfil
+                            </a>
+                            <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Cerrar sesión
+                            </a>
                         </div>
-                    </button>
-                    <div class="dropdown-menu" id="dropdownMenu">
-                        <a href="{% url 'smart_profile' %}" class="dropdown-item">
-                            <i class="fas fa-user"></i>
-                            Ver perfil
-                        </a>
-                        <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Cerrar sesión
-                        </a>
+                        <form id="logout-form" method="post" action="#" style="display: none;">
+                            {% csrf_token %}    
+                        </form>
                     </div>
-                    <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
-                        {% csrf_token %}    
-                    </form>
+                    {% else %}
+                    <ul>
+                        <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
+                        <li><a href="{% url 'register' %}">Registrarse</a></li>
+                    </ul>
+                    {% endif %}
                 </div>
-                {% else %}
-                <ul>
-                    <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
-                    <li><a href="{% url 'register' %}">Registrarse</a></li>
-                </ul>
-                {% endif %}
             </div>
-        </div>
-
-        <div class="links-div" id="mobile-menu">
-            <ul class="links">
-                <li><a href="{% url 'buscar_gimnasios' %}?orden=productos">Más productos</a></li>
-                <li><a href="{% url 'buscar_gimnasios' %}?orden=precio">Precios más bajos</a></li>
-                <li><a href="{% url 'buscar_gimnasios' %}?orden=reseñas">Mejores reseñas</a></li>
-                <li><a href="{% url 'buscar_gimnasios' %}?orden=maquinas">Mayor cantidad de máquinas</a></li>
-            </ul>
         </div>
 
         <div class="center">
             <div>
-                <h1 class="h1">GMSearch</h1>
-                {% if user.is_authenticated %}
-                <p>Bienvenido {{usuario.nombre}}, encuentra tu nuevo gimnasio </p>
-                {% else %}
-                <p>El mejor sitio para buscar gimnasios</p>
-                {% endif %}
+                <h1 class="h1">Derma Chat</h1>
             </div>
-            <form method="get" action="{% url 'buscar_gimnasios' %}">
-                <input type="text" class="search" name="q" placeholder="Encuentra el gym ideal para ti...">
-                <button type="submit" class="search-button">
-                    <i class="fa fa-search" aria-hidden="true"></i>
+            <form method="post" action="#" enctype="multipart/form-data">
+                {% csrf_token %}
+                <button type="submit" class="go-button">
+                    <i class="fa fa-comments" aria-hidden="true"></i> CHARLEMOS
                 </button>
             </form>
+        </div>
+
+        <div class="bottom">
+            <section class="section">
+                <h2>¿Quiénes somos?</h2>
+                <p>
+                    Somos una plataforma dedicada a ofrecer un analisis sobre el acne mediante inteligencia artificial...
+                </p>
+            </section>
+
+            <section class="section alt">
+                <h2>¿Cómo funciona?</h2>
+                <p>
+                    Para comenzar debes hablar con nuestro chatbot...
+                </p>
+            </section>
+
+            <section class="section">
+                <h2>Informacion utilizada</h2>
+                <p>
+                    ...
+                </p>
+            </section>
         </div>
     </main>
 
     <script src="{% static 'core/js/main.js' %}"></script>
     <script>
-        // Script para el botón toggle de opciones
         document.addEventListener('DOMContentLoaded', function() {
-            const toggleButton = document.getElementById('toggleOptions');
-            const searchOptions = document.getElementById('searchOptions');
-            let isVisible = false;
-
-            toggleButton.addEventListener('click', function() {
-                if (isVisible) {
-                    // Ocultar opciones
-                    searchOptions.style.display = 'none';
-                    toggleButton.textContent = 'O>';
-                    isVisible = false;
-                } else {
-                    // Mostrar opciones
-                    searchOptions.style.display = 'flex';
-                    toggleButton.textContent = '-<';
-                    isVisible = true;
-                }
-            });
-
-            // Script para el menú desplegable de Account
             const accountBtn = document.getElementById('accountBtn');
             const dropdownMenu = document.getElementById('dropdownMenu');
-            let isDropdownOpen = false;
-
+            
             if (accountBtn && dropdownMenu) {
                 accountBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    if (isDropdownOpen) {
-                        dropdownMenu.classList.remove('show');
-                        isDropdownOpen = false;
-                    } else {
-                        dropdownMenu.classList.add('show');
-                        isDropdownOpen = true;
-                    }
+                    dropdownMenu.classList.toggle('show');
                 });
 
-                // Cerrar el menú al hacer clic fuera de él
                 document.addEventListener('click', function(e) {
                     if (!accountBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
                         dropdownMenu.classList.remove('show');
-                        isDropdownOpen = false;
                     }
                 });
             }

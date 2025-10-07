@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión</title>
+  <link rel="stylesheet" href="{% static 'core/css/login.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="main">
+    <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
+      <i class="fas fa-home"></i>
+    </a>
+    <div class="center">
+      <h1>Iniciar sesión</h1>
+      <form id="loginForm">
+        {% csrf_token %}
+        <div class="Username">
+          <input type="email" id="email" required>
+          <label>Correo electrónico</label>
+          <span></span>
+        </div>
+        <div class="Username">
+          <input type="password" id="password" required>
+          <label>Contraseña</label>
+          <span></span>
+        </div>
+
+        <div class="recordar">¿Olvidó su contraseña?</div>
+        <input type="submit" value="Iniciar sesión">
+        <div class="registrarse">
+          <a href="{% url 'register' %}">Registrarse</a>
+        </div>
+        <p id="mensaje" style="color: red;"></p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const mensaje = document.getElementById('mensaje');
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch("{% url 'login_usuario' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          if (data.redirect) {
+            window.location.href = data.redirect;
+          } else {
+            window.location.href = "{% url 'index' %}";
+          }
+        } else {
+          mensaje.textContent = data.error || "Error desconocido";
+        }
+      } catch (err) {
+        mensaje.textContent = "Error de conexión";
+      }
+    });
+  </script>
+</body>
+</html>
