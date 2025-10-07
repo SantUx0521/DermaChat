@@ -11,7 +11,6 @@ from rest_framework.decorators import action
 from .models import *
 from .serializers import *
 from django_filters.rest_framework import DjangoFilterBackend
-from .filters import GimnasioFilter
 from django.contrib.auth import login
 #verificacion de email
 from django.utils import timezone
@@ -24,7 +23,9 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth import logout
 from django.db.models import Count, Avg
 from rest_framework.exceptions import PermissionDenied
-from .models import Gimnasio, Reseña, Usuario, Inventario, Maquina
+from .models import  Conversacion, Mensaje ,Usuario
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
 
 def index(request):
     return render(request, 'core/index.html')
@@ -32,38 +33,7 @@ def index(request):
 # ----------------------------
 # buscar un gimnasio por nombre
 # ----------------------------
-def buscar_gimnasios(request):  
-    query = request.GET.get('q', '')
-    orden = request.GET.get('orden', '')
 
-    if query:
-        gimnasios = Gimnasio.objects.filter(nombre_gym__icontains=query)
-        if not gimnasios.exists():
-            gimnasios = Gimnasio.objects.all()
-    else:
-        gimnasios = Gimnasio.objects.all()
-    
-    if orden == 'precio':
-        gimnasios = gimnasios.order_by('precio_inscripcion')
-    elif orden == 'reseñas':
-        gimnasios = gimnasios.annotate(promedio=Avg('resenas__estrellas')).order_by('-promedio')
-    elif orden == 'maquinas':
-        gimnasios = gimnasios.annotate(num_maquinas=Count('maquinas')).order_by('-num_maquinas')
-    elif orden == 'productos':
-        gimnasios = gimnasios.annotate(num_productos=Count('productos')).order_by('-num_productos')
-    return render(request, 'core/search.html', {'query': query, 'gimnasios': gimnasios,  'orden': orden,})
-
-
-
-
-def recomendar_gimnasio(request):
-    # Obtener los 5 gimnasios con mejor calificación
-    gimnasios_recomendados = Gimnasio.objects.order_by('-calificacion')[:5]
-
-    gimnasios_listados = {
-        'gimnasios_recomendados': gimnasios_recomendados
-    }
-    return render(request, 'core/index.html', gimnasios_listados)
 
 
 # ----------------------------
@@ -99,117 +69,6 @@ class LoginView(APIView):
                 return JsonResponse({'error': 'correo y/o contraseña incorrecta'}, status=400)
     
     
-
-
-
-
-
-
-# ----------------------------
-# Gimnasio
-# ----------------------------
-
-class GimnasioViewSet(viewsets.ModelViewSet):
-    queryset = Gimnasio.objects.all()
-    serializer_class = GimnasioSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = GimnasioFilter
-    
-
-# ----------------------------
-# Rutinas
-# ----------------------------
-class RutinaViewSet(viewsets.ModelViewSet):
-    queryset = Rutina.objects.all()
-    serializer_class = RutinaSerializer
-
-
-# ----------------------------
-# Inventario
-# ----------------------------
-class InventarioViewSet(viewsets.ModelViewSet):
-    queryset = Inventario.objects.all()
-    serializer_class = InventarioSerializer
-
-
-# ----------------------------
-# Maquinas
-# ----------------------------
-class MaquinaViewSet(viewsets.ModelViewSet):
-    queryset = Maquina.objects.all()
-    serializer_class = MaquinaSerializer
-
-
-
-
-# ----------------------------
-# Favoritos
-# ----------------------------
-class FavoritoViewSet(viewsets.ModelViewSet):
-    queryset = Favorito.objects.all()
-    serializer_class = FavoritoSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        queryset = Favorito.objects.filter(usuario=user)
-        gimnasio_qs = queryset.values_list('gimnasio', flat=True)
-
-        # Aplicar filtros adicionales si es necesario
-        ubicacion = self.request.query_params.get('ubicacion')
-        precio_max = self.request.query_params.get('precio_max')
-        calificacion = self.request.query_params.get('calificacion')
-
-        if ubicacion:
-            gimnasio_qs = gimnasio_qs.filter(ubicacion__icontains=ubicacion)
-        if precio_max:
-            gimnasio_qs = gimnasio_qs.filter(precio_inscripcion__lte=precio_max)
-        if calificacion:
-            gimnasio_qs = gimnasio_qs.filter(calificacion__gte=calificacion)
-
-        return queryset.filter(gimnasio__in=gimnasio_qs)
-#----------------------------
-# reseña 
-# ---------------------------       
-
-class ReseñaViewSet(viewsets.ModelViewSet):
-    queryset = Reseña.objects.all()
-    serializer_class = ReseñaSerializer
-
-    def perform_create(self, serializer):
-
-        if not self.request.user.is_authenticated:
-            raise PermissionDenied("Debes iniciar sesión para dejar una reseña.")
-        
-        reseña = serializer.save(usuario=self.request.user)
-        gimnasio = reseña.gimnasio
-
-        # Actualizar la calificación del gimnasio
-        reseñas = gimnasio.resenas.all()
-        promedio = reseñas.aggregate(models.Avg('estrellas'))['estrellas__avg']
-        gimnasio.calificacion = round(promedio, 2)
-        gimnasio.cantidad_resenas = reseñas.count()
-        gimnasio.save()
-
-    def perform_update(self, serializer):
-        if not self.request.user.is_authenticated:
-            raise PermissionDenied("Debes iniciar sesión para editar una reseña.")
-        
-        # Verificar que el usuario sea el autor de la reseña
-        reseña = serializer.instance
-        if reseña.usuario != self.request.user:
-            raise PermissionDenied("Solo puedes editar tus propias reseñas.")
-        
-        # Guardar la reseña actualizada (el modelo automáticamente marcará como editado)
-        reseña = serializer.save()
-        
-        # Actualizar la calificación del gimnasio
-        gimnasio = reseña.gimnasio
-        reseñas = gimnasio.resenas.all()
-        promedio = reseñas.aggregate(models.Avg('estrellas'))['estrellas__avg']
-        gimnasio.calificacion = round(promedio, 2)
-        gimnasio.cantidad_resenas = reseñas.count()
-        gimnasio.save()
-
 
 #----------------------------
 # Login (HTML)
@@ -288,46 +147,13 @@ def verificar_email(request, token):
     except Usuario.DoesNotExist:
         return render(request, 'core/token_invalido.html')
 
-def normalizar_estatura(estatura_str):
-    if not estatura_str:
-        return None
-    
-    # Eliminar espacios y convertir a minúsculas
-    estatura_str = estatura_str.strip().lower()
-    
-    # Si ya está en centímetros (número sin punto ni coma)
-    if estatura_str.isdigit():
-        return float(estatura_str)
-    
-    # Reemplazar coma por punto para estandarizar
-    estatura_str = estatura_str.replace(',', '.')
-    
-    try:
-        # Convertir a float
-        estatura = float(estatura_str)
-        
-        # Si el número es menor a 3, asumimos que está en metros
-        if estatura < 3:
-            return estatura * 100  # Convertir a centímetros
-        else:
-            return estatura  # Ya está en centímetros
-    except ValueError:
-        return None
+
 
 def post_reg(request):
     if request.method == 'POST': # utilizado para añadir datos adicionales sobre el usuario, que se veran desplegados en su profile
         usuario = request.user
         usuario.nombres = request.POST.get('nombres')
-        usuario.apellidos = request.POST.get('apellidos')
         usuario.edad = request.POST.get('edad') or None
-        usuario.telefono = request.POST.get('telefono')
-        
-        # Normalizar la estatura
-        estatura = request.POST.get('estatura')
-        usuario.estatura = normalizar_estatura(estatura)
-        
-        usuario.peso = request.POST.get('peso') or None
-        usuario.sexo = request.POST.get('sexo')
         usuario.save()
         return redirect('profile')
     
@@ -342,18 +168,7 @@ def profile(request):
     usuario = request.user  # necesario para acceder directamente al usuario
     return render(request, 'core/profile.html', {'usuario': usuario})
 
-def smart_profile(request):
-    """Vista inteligente que detecta si el usuario es dueño de un gimnasio"""
-    usuario = request.user
-    
-    # Verificar si el usuario es dueño de algún gimnasio
-    try:
-        gimnasio = Gimnasio.objects.get(dueño=usuario)
-        # Si es dueño de un gimnasio, redirigir al perfil del gimnasio
-        return redirect('gym_profile', gimnasio_id=gimnasio.codigo_gym)
-    except Gimnasio.DoesNotExist:
-        # Si no es dueño de ningún gimnasio, mostrar el perfil normal del usuario
-        return redirect('profile')
+
 
 def edit_profile(request):
     usuario = request.user
@@ -366,14 +181,7 @@ def edit_profile(request):
         usuario.nombre = request.POST.get('nombre', usuario.nombre)
         usuario.email = request.POST.get('email', usuario.email)
         usuario.edad = request.POST.get('edad') or None
-        usuario.telefono = request.POST.get('telefono', usuario.telefono)
         
-        # Normalizar la estatura
-        estatura = request.POST.get('estatura')
-        usuario.estatura = normalizar_estatura(estatura)
-        
-        usuario.peso = request.POST.get('peso') or None
-        usuario.sexo = request.POST.get('sexo', usuario.sexo)
         
         # Manejar la subida de la foto de perfil
         if 'foto_perfil' in request.FILES:
@@ -438,335 +246,16 @@ def login_usuario(request):
             
             login(request, usuario)
             
-            # Redirigir según el tipo de usuario
-            if usuario.es_dueño:
-                # Verificar si ya tiene un gimnasio registrado
-                try:
-                    gimnasio = Gimnasio.objects.get(dueño=usuario)
-                    return JsonResponse({'mensaje': 'Inicio de sesión exitoso', 'redirect': f'/gym-profile/{gimnasio.codigo_gym}/'})
-                except Gimnasio.DoesNotExist:
-                    return JsonResponse({'mensaje': 'Inicio de sesión exitoso', 'redirect': '/register-gym/'})
-            else:
-                return JsonResponse({'mensaje': 'Inicio de sesión exitoso', 'redirect': '/profile'})
-        else:
-            return JsonResponse({'error': 'correo y/o contraseña incorrecta'}, status=400)
-        
-def search(request):
-    gimnasios = Gimnasio.objects.all()  
-    return render(request, 'core/search.html', {'gimnasios': gimnasios})
 
 def logout_view(request):
     if request.method == 'POST':
         logout(request)
     return redirect('index')
 
-def register_gym(request):
-    if request.method == 'POST':
-        nombre_gym = request.POST['nombre_gym']
-        ubicacion = request.POST['ubicacion']
-        precio = request.POST['precio_inscripcion']
-        descripcion = request.POST['descripcion']
-        numero = request.POST['contacto']
-        imagen = request.FILES.get('imagen')
 
-        gimnasio = Gimnasio.objects.create(
-            dueño=request.user,
-            nombre_gym=nombre_gym,
-            ubicacion=ubicacion,
-            precio_inscripcion=precio,
-            descripcion=descripcion,
-            imagen=imagen
-        )
 
-        request.user.telefono = numero
-        request.user.save()
 
-        return redirect('gym_profile', gimnasio_id=gimnasio.codigo_gym)
 
-    return render(request, 'core/registerGym.html')
-
-def gym_profile(request, gimnasio_id):
-    """Vista para mostrar el perfil del gimnasio"""
-    try:
-        gimnasio = Gimnasio.objects.get(pk=gimnasio_id)
-        maquinas = gimnasio.maquinas.all()
-        productos = gimnasio.productos.all()
-        
-        context = {
-            'gimnasio': gimnasio,
-            'maquinas': maquinas,
-            'productos': productos,
-        }
-        return render(request, 'core/gymprofile.html', context)
-    except Gimnasio.DoesNotExist:
-        return redirect('index')
-
-def edit_gym_profile(request, gimnasio_id):
-    """Vista para editar el perfil del gimnasio"""
-    try:
-        gimnasio = Gimnasio.objects.get(pk=gimnasio_id)
-        
-        # Verificar que el usuario sea el dueño del gimnasio
-        if request.user != gimnasio.dueño:
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-        
-        if request.method == 'POST':
-            # Actualizar los datos del gimnasio
-            gimnasio.nombre_gym = request.POST.get('nombre_gym', gimnasio.nombre_gym)
-            gimnasio.ubicacion = request.POST.get('ubicacion', gimnasio.ubicacion)
-            gimnasio.precio_inscripcion = request.POST.get('precio_inscripcion', gimnasio.precio_inscripcion)
-            gimnasio.descripcion = request.POST.get('descripcion', gimnasio.descripcion)
-            
-            # Actualizar imagen si se proporciona una nueva
-            if 'imagen' in request.FILES:
-                gimnasio.imagen = request.FILES['imagen']
-            
-            # Actualizar datos del dueño
-            request.user.nombre = request.POST.get('nombre_dueno', request.user.nombre)
-            request.user.email = request.POST.get('email_dueno', request.user.email)
-            request.user.telefono = request.POST.get('contacto', request.user.telefono)
-            
-            gimnasio.save()
-            request.user.save()
-            
-            # Redirigir al perfil del gimnasio después de guardar
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-        
-        context = {
-            'gimnasio': gimnasio,
-        }
-        return render(request, 'core/edit_gym_profile.html', context)
-    except Gimnasio.DoesNotExist:
-        return redirect('index')
-
-def edit_inventory(request, gimnasio_id):
-    """Vista para editar máquinas y productos del gimnasio"""
-    try:
-        gimnasio = Gimnasio.objects.get(pk=gimnasio_id)
-        
-        # Verificar que el usuario sea el dueño del gimnasio
-        if request.user != gimnasio.dueño:
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-        
-        # Obtener máquinas y productos del gimnasio
-        maquinas = gimnasio.maquinas.all()
-        productos = gimnasio.productos.all()
-        
-        context = {
-            'gimnasio': gimnasio,
-            'maquinas': maquinas,
-            'productos': productos,
-        }
-        return render(request, 'core/edit_inventory.html', context)
-    except Gimnasio.DoesNotExist:
-        return redirect('index')
-
-def delete_maquina(request, gimnasio_id, maquina_id):
-    """Vista para eliminar una máquina"""
-    try:
-        gimnasio = Gimnasio.objects.get(pk=gimnasio_id)
-        
-        # Verificar que el usuario sea el dueño del gimnasio
-        if request.user != gimnasio.dueño:
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-        
-        maquina = Maquina.objects.get(pk=maquina_id, gimnasio=gimnasio)
-        maquina.delete()
-        
-        return redirect('edit_inventory', gimnasio_id=gimnasio_id)
-    except (Gimnasio.DoesNotExist, Maquina.DoesNotExist):
-        return redirect('index')
-
-def delete_producto(request, gimnasio_id, producto_id):
-    """Vista para eliminar un producto"""
-    try:
-        gimnasio = Gimnasio.objects.get(pk=gimnasio_id)
-        
-        # Verificar que el usuario sea el dueño del gimnasio
-        if request.user != gimnasio.dueño:
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-        
-        producto = Inventario.objects.get(pk=producto_id, gimnasio=gimnasio)
-        producto.delete()
-        
-        return redirect('edit_inventory', gimnasio_id=gimnasio_id)
-    except (Gimnasio.DoesNotExist, Inventario.DoesNotExist):
-        return redirect('index')
-
-def edit_maquina(request, gimnasio_id, maquina_id):
-    """Vista para editar una máquina"""
-    try:
-        gimnasio = Gimnasio.objects.get(pk=gimnasio_id)
-        
-        # Verificar que el usuario sea el dueño del gimnasio
-        if request.user != gimnasio.dueño:
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-        
-        maquina = Maquina.objects.get(pk=maquina_id, gimnasio=gimnasio)
-        
-        if request.method == 'POST':
-            maquina.nombre = request.POST.get('nombre', maquina.nombre)
-            maquina.descripcion = request.POST.get('descripcion', maquina.descripcion)
-            maquina.save()
-            return redirect('edit_inventory', gimnasio_id=gimnasio_id)
-        
-        context = {
-            'gimnasio': gimnasio,
-            'maquina': maquina,
-        }
-        return render(request, 'core/edit_maquina.html', context)
-    except (Gimnasio.DoesNotExist, Maquina.DoesNotExist):
-        return redirect('index')
-
-def edit_producto(request, gimnasio_id, producto_id):
-    """Vista para editar un producto"""
-    try:
-        gimnasio = Gimnasio.objects.get(pk=gimnasio_id)
-        
-        # Verificar que el usuario sea el dueño del gimnasio
-        if request.user != gimnasio.dueño:
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-        
-        producto = Inventario.objects.get(pk=producto_id, gimnasio=gimnasio)
-        
-        if request.method == 'POST':
-            producto.nombre_prod = request.POST.get('nombre_prod', producto.nombre_prod)
-            producto.descripcion = request.POST.get('descripcion', producto.descripcion)
-            producto.precio = request.POST.get('precio', producto.precio)
-            producto.save()
-            return redirect('edit_inventory', gimnasio_id=gimnasio_id)
-        
-        context = {
-            'gimnasio': gimnasio,
-            'producto': producto,
-        }
-        return render(request, 'core/edit_producto.html', context)
-    except (Gimnasio.DoesNotExist, Inventario.DoesNotExist):
-        return redirect('index')
-
-def gimnasio_detalle_api(request, gimnasio_id):
-    try:
-        gym = Gimnasio.objects.get(pk=gimnasio_id)
-        maquinas = gym.maquinas.all()
-        maquinas_data = [{"nombre": m.nombre, "descripcion": m.descripcion} for m in maquinas]
-        productos = list(gym.productos.values('nombre_prod', 'descripcion', 'precio'))
-        
-        # Obtener las reseñas del gimnasio
-        reseñas = gym.resenas.all().order_by('-fecha')
-        reseñas_data = []
-        for reseña in reseñas:
-            reseñas_data.append({
-                'id': reseña.pk,
-                'usuario_nombre': reseña.usuario.nombre,
-                'estrellas': reseña.estrellas,
-                'texto': reseña.texto,
-                'fecha': reseña.fecha.isoformat(),
-                'editado': reseña.editado,
-                'es_mi_resena': request.user.is_authenticated and reseña.usuario == request.user
-            })
-    except Gimnasio.DoesNotExist:
-        raise Http404("Gimnasio no encontrado")
-
-    data = {
-        'nombre_gym': gym.nombre_gym,
-        'ubicacion': gym.ubicacion,
-        "numero": gym.dueño.telefono or "No disponible",
-        'precio_inscripcion': float(gym.precio_inscripcion),
-        'descripcion': gym.descripcion,
-        'imagen': gym.imagen.url if gym.imagen else '',
-        'calificacion': round(gym.calificacion, 2),  # ⭐ Añadido
-        'cantidad_resenas': gym.cantidad_resenas,     # ⭐ Añadido
-        'maquinas': maquinas_data,
-        'productos': productos,
-        'resenas': reseñas_data,  # ⭐ Añadido
-    }
-    return JsonResponse(data)
-
-def add_maquina(request, gimnasio_id):
-    """Vista para agregar una nueva máquina"""
-    try:
-        gimnasio = Gimnasio.objects.get(pk=gimnasio_id)
-        
-        # Verificar que el usuario sea el dueño del gimnasio
-        if request.user != gimnasio.dueño:
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-        
-        if request.method == 'POST':
-            nombre = request.POST.get('nombre')
-            descripcion = request.POST.get('descripcion')
-            
-            if nombre and descripcion:
-                Maquina.objects.create(
-                    gimnasio=gimnasio,
-                    nombre=nombre,
-                    descripcion=descripcion
-                )
-                return redirect('edit_inventory', gimnasio_id=gimnasio_id)
-        
-        context = {
-            'gimnasio': gimnasio,
-        }
-        return render(request, 'core/add_maquina.html', context)
-    except Gimnasio.DoesNotExist:
-        return redirect('index')
-
-def add_producto(request, gimnasio_id):
-    """Vista para agregar un nuevo producto"""
-    try:
-        gimnasio = Gimnasio.objects.get(pk=gimnasio_id)
-        
-        # Verificar que el usuario sea el dueño del gimnasio
-        if request.user != gimnasio.dueño:
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-        
-        if request.method == 'POST':
-            nombre_prod = request.POST.get('nombre_prod')
-            descripcion = request.POST.get('descripcion')
-            precio = request.POST.get('precio')
-            
-            if nombre_prod and descripcion and precio:
-                Inventario.objects.create(
-                    gimnasio=gimnasio,
-                    nombre_prod=nombre_prod,
-                    descripcion=descripcion,
-                    precio=precio
-                )
-                return redirect('edit_inventory', gimnasio_id=gimnasio_id)
-        
-        context = {
-            'gimnasio': gimnasio,
-        }
-        return render(request, 'core/add_producto.html', context)
-    except Gimnasio.DoesNotExist:
-        return redirect('index')
-
-def delete_gym_account(request, gimnasio_id):
-    if request.method == 'POST':
-        try:
-            gimnasio = Gimnasio.objects.get(codigo_gym=gimnasio_id, dueño=request.user)
-            # Eliminar el gimnasio (esto también eliminará las reseñas, máquinas, productos, etc.)
-            gimnasio.delete()
-            # Cerrar sesión del usuario
-            logout(request)
-            return redirect('index')
-        except Gimnasio.DoesNotExist:
-            return redirect('gym_profile', gimnasio_id=gimnasio_id)
-    
-    return redirect('gym_profile', gimnasio_id=gimnasio_id)
-
-def gimnasio_resenas(request, gimnasio_id):
-    """Vista para mostrar todas las reseñas de un gimnasio específico"""
-    try:
-        gimnasio = Gimnasio.objects.get(codigo_gym=gimnasio_id)
-        reseñas = gimnasio.resenas.all().order_by('-fecha')
-        
-        context = {
-            'gimnasio': gimnasio,
-            'reseñas': reseñas,
-        }
-        return render(request, 'core/gimnasio_resenas.html', context)
-    except Gimnasio.DoesNotExist:
-        return redirect('index')
 
 def reenviar_verificacion(request):
     """Vista para reenviar el email de verificación"""
@@ -824,62 +313,62 @@ def eliminar_cuenta_usuario(request):
     
     return redirect('profile')
 
-def editar_resena(request, gimnasio_id, resena_id):
-    """Vista para editar una reseña"""
-    try:
-        gimnasio = Gimnasio.objects.get(codigo_gym=gimnasio_id)
-        reseña = Reseña.objects.get(pk=resena_id, gimnasio=gimnasio, usuario=request.user)
-        
-        if request.method == 'POST':
-            # Actualizar la reseña
-            reseña.estrellas = int(request.POST.get('estrellas', reseña.estrellas))
-            reseña.texto = request.POST.get('texto', reseña.texto)
-            
-            reseña.save()  # El modelo automáticamente marcará como editado
-            
-            # Actualizar manualmente la calificación del gimnasio
-            reseñas = gimnasio.resenas.all()
-            promedio = reseñas.aggregate(models.Avg('estrellas'))['estrellas__avg']
-            gimnasio.calificacion = round(promedio, 2)
-            gimnasio.cantidad_resenas = reseñas.count()
-            gimnasio.save()
-            
-            # Redirigir a la página de búsqueda (donde estaban anteriormente)
-            return redirect('search')
-        
-        context = {
-            'gimnasio': gimnasio,
-            'reseña': reseña,
-        }
-        return render(request, 'core/editar_resena.html', context)
-    except (Gimnasio.DoesNotExist, Reseña.DoesNotExist):
-        return redirect('index')
+class ConversacionViewSet(viewsets.ModelViewSet):
+    serializer_class = ConversacionSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['titulo']
 
-def eliminar_resena(request, gimnasio_id, resena_id):
-    """Vista para eliminar una reseña"""
-    if request.method == 'POST':
-        try:
-            gimnasio = Gimnasio.objects.get(codigo_gym=gimnasio_id)
-            reseña = Reseña.objects.get(pk=resena_id, gimnasio=gimnasio, usuario=request.user)
-            
-            # Eliminar la reseña
-            reseña.delete()
-            
-            # Actualizar la calificación del gimnasio
-            reseñas = gimnasio.resenas.all()
-            if reseñas.exists():
-                promedio = reseñas.aggregate(models.Avg('estrellas'))['estrellas__avg']
-                gimnasio.calificacion = round(promedio, 2)
-            else:
-                gimnasio.calificacion = 0
-            gimnasio.cantidad_resenas = reseñas.count()
-            gimnasio.save()
-            
-            # Redirigir a la página de búsqueda (donde estaban anteriormente)
-            return redirect('search')
-        except (Gimnasio.DoesNotExist, Reseña.DoesNotExist):
-            return redirect('index')
+    def get_queryset(self):
+        #filtro para que cada usuario sea el unico en ver sus comveraciones
+        return Conversacion.objects.filter(usuario=self.request.user).order_by('-creada_en')
+
+    def perform_create(self, serializer):
+        # metodo para asignar automaticamente al usuario
+        serializer.save(usuario=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def enviar_mensaje(self, request, pk=None):
     
-    return redirect('gym_profile', gimnasio_id=gimnasio_id)
+        conversacion = self.get_object()
+        contenido = request.data.get('contenido')
+
+        if not contenido:
+            return Response({'error': 'El contenido no puede estar vacío.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # guardar un mensaje del usuario
+        Mensaje.objects.create(
+            conversacion=conversacion,
+            remitente='usuario',
+            contenido=contenido
+        )
+
+        # metodo provicional para simular respuesta
+        #aqui se debe añadir la APi de la IA
+        respuesta = f"Hola {request.user.nombre}, recibí tu mensaje: '{contenido}'"
+        Mensaje.objects.create(
+            conversacion=conversacion,
+            remitente='ia',
+            contenido=respuesta
+        )
+
+        # metodo para devolver la conversación actualizada
+        serializer = self.get_serializer(conversacion)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+class MensajeViewSet(viewsets.ModelViewSet):
+
+    serializer_class = MensajeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Mensaje.objects.filter(
+            conversacion__usuario=self.request.user
+        ).order_by('creado_en')
+
+    def perform_create(self, serializer):
+        conversacion_id = self.request.data.get('conversacion')
+        conversacion = get_object_or_404(Conversacion, id=conversacion_id, usuario=self.request.user)
+
+        serializer.save(conversacion=conversacion)
