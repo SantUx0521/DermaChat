@@ -10,10 +10,7 @@
 </head>
 <body>
   <div class="main">
-    <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
-      <i class="fas fa-home"></i>
-    </a>
-    <div class="center">
+    <div class="right">
       <h1>Iniciar sesión</h1>
       <form id="loginForm">
         {% csrf_token %}
@@ -28,13 +25,19 @@
           <span></span>
         </div>
 
-        <div class="recordar">¿Olvidó su contraseña?</div>
+        <div class="recordar">
+          <a href="#">¿Olvidó su contraseña?</a> </div>
         <input type="submit" value="Iniciar sesión">
         <div class="registrarse">
+          <label>¿No tiene una cuenta?</label>
           <a href="{% url 'register' %}">Registrarse</a>
         </div>
         <p id="mensaje" style="color: red;"></p>
       </form>
+    </div>
+    <div class="left">
+      <div class="img">
+        </div>
     </div>
   </div>
 
