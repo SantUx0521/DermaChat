@@ -13,41 +13,47 @@
     <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
         <i class="fas fa-home"></i>
       </a>
-    <div class="center">
-      <h1>Registrarse</h1>
-      {% if error %}
-      <p style="color: red; text-align: center;">{{ error }}</p>
-      {% endif %}
-      <form method="post" action="{% url 'register' %}" id="registerForm">
-        {% csrf_token %}
-        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-        <input type="hidden" name="tipo_usuario" value="cliente">
-        <div class="Username">
-            <input type="text" name="nombre" required>
-            <label>Nombre de usuario</label>
-            <span></span>
-        </div>
-        <div class="Username">
-            <input type="email" name="email" required>
-            <label>Correo electrónico</label>
-            <span></span>
-        </div>
-        <div class="Username">
-            <input type="password" name="password" id="password" required>
-            <label>Contraseña</label>
-            <span></span>
-        </div>
-        <div class="Username">
-            <input type="password" name="confirm_password" id="confirm_password" required>
-            <label>Confirmar contraseña</label>
-            <span></span>
-        </div>
-        <p id="password_error" style="color: red; display: none;">Las contraseñas no coinciden</p>
-        <input type="submit" value="Registrarse">
-        <div class="iniciar">
-            ¿Ya se registró?<a href="{% url 'login' %}">Iniciar sesión</a>
-        </div>
-      </form>
+      <div class="left">
+        <h1>Registrarse</h1>
+        {% if error %}
+        <p style="color: red; text-align: center;">{{ error }}</p>
+        {% endif %}
+        <form method="post" action="{% url 'register' %}" id="registerForm">
+          {% csrf_token %}
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+          <input type="hidden" name="tipo_usuario" value="cliente">
+          <div class="Username">
+              <input type="text" name="nombre" required>
+              <label>Nombre de usuario</label>
+              <span></span>
+          </div>
+          <div class="Username">
+              <input type="email" name="email" required>
+              <label>Correo electrónico</label>
+              <span></span>
+          </div>
+          <div class="Username">
+              <input type="password" name="password" id="password" required>
+              <label>Contraseña</label>
+              <span></span>
+          </div>
+          <div class="Username">
+              <input type="password" name="confirm_password" id="confirm_password" required>
+              <label>Confirmar contraseña</label>
+              <span></span>
+          </div>
+          <p id="password_error" style="color: red; display: none;">Las contraseñas no coinciden</p>
+          <input type="submit" value="Registrarse">
+          <div class="iniciar">
+              ¿Ya se registró?<a href="{% url 'login' %}">Iniciar sesión</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="right">
+        <div class="img">  
+          </div>
+      </div>
     </div>
   </div>
 
