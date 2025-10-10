@@ -42,10 +42,10 @@
                             </a>
                             <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
                                 <i class="fas fa-sign-out-alt"></i>
-                                Cerrar sesión
+                                    Cerrar sesión
                             </a>
                         </div>
-                        <form id="logout-form" method="post" action="#" style="display: none;">
+                        <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
                             {% csrf_token %}    
                         </form>
                     </div>
@@ -75,21 +75,29 @@
             <section class="section">
                 <h2>¿Quiénes somos?</h2>
                 <p>
-                    Somos una plataforma dedicada a ofrecer un analisis sobre el acne mediante inteligencia artificial...
+                    Somos una plataforma dedicada a ofrecer un analisis sobre el acne mediante inteligencia artificial, con el fin de ayudar a las personas a quitar sus dudas sobre su piel.
+                    En Derma Chat, podras verificar tus dudas antes de acudir a un profesional, pero recuerda que siempre es mejor acudir a un dermatólogo.
                 </p>
             </section>
 
             <section class="section alt">
                 <h2>¿Cómo funciona?</h2>
                 <p>
-                    Para comenzar debes hablar con nuestro chatbot...
+                    Derma chat utiliza un modelo de inteligencia artificial entrenado con una amplia base de datos de imágenes y casos de acné para proporcionar análisis y recomendaciones personalizadas.
+                    Los usuarios pueden subir imágenes de su piel y recibir un análisis sobre su condición y en caso de detectar un problema mayor, se les recomienda acudir a un dermatólogo.
                 </p>
             </section>
 
             <section class="section">
                 <h2>Informacion utilizada</h2>
                 <p>
-                    ...
+                    <a href= "https://www.ncbi.nlm.nih.gov/books/NBK459173"> National library of medicine</a>
+                </p>
+                <p>
+                    <a href= "https://www.msdmanuals.com/es/hogar/trastornos-de-la-piel/acné-y-trastornos-relacionados/acné?ruleredirectid=752"> MSD</a>
+                </p>
+                <p>
+                    <a href= "https://www.sciencedirect.com/science/article/abs/pii/S1245178922465012"> ScienceDirect</a>
                 </p>
             </section>
         </div>

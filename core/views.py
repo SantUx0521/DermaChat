@@ -29,10 +29,6 @@ from rest_framework import status
 
 def index(request):
     return render(request, 'core/index.html')
-    
-# ----------------------------
-# buscar un gimnasio por nombre
-# ----------------------------
 
 
 
@@ -48,6 +44,7 @@ class RegistroUsuarioView(generics.CreateAPIView):
 # ----------------------------
 # Login (Token)
 # ----------------------------
+
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -77,10 +74,43 @@ def login_page(request):
     return render(request, 'core/login.html')
 
 def register_page(request):
+    if request.method == 'POST':
+        nombre = request.POST['nombre']
+        email = request.POST['email']
+        password = request.POST['password']
+        confirm_password = request.POST.get('confirm_password')
+        
+        # Validamos que las contraseñas coincidan
+        if password != confirm_password:
+            return render(request, 'core/register.html', {'error': 'Las contraseñas no coinciden'})
+        
+        # Validamos que el correo no esté registrado
+        if Usuario.objects.filter(email=email).exists():
+            return render(request, 'core/register.html', {'error': 'Este correo electrónico ya está registrado'})
+        
+        
+        usuario = Usuario.objects.create(
+            email=email,
+            nombre=nombre,
+            password=make_password(password),
+        )
+        return render(request, 'core/index.html')
     return render(request, 'core/register.html')
 
+def login_usuario(request):
+    if request.method == 'POST':
+        data = json.loads(request.body) 
+        email = data.get('email') 
+        password = data.get('password')
 
+        usuario = authenticate(request, username=email, password=password)
 
+        if usuario is not None:
+            login(request, usuario)
+            return JsonResponse({'redirect': '/'} )     
+        else:
+            return JsonResponse({'error': 'correo y/o contraseña incorrecta'}, status=400)
+    return render(request, 'core/login.html')
 
 
 def verificar_email(request, token):
@@ -95,7 +125,6 @@ def verificar_email(request, token):
             
             # Redirigir a la página de login con mensaje de éxito
             context = {
-                'es_dueño': usuario.es_dueño,
                 'nombre_usuario': usuario.nombre
             }
             return render(request, 'core/verificacion_exitosa.html', context)
@@ -188,20 +217,6 @@ def edit_profile(request):
         return redirect('profile')
     
     return render(request, 'core/edit_profile.html', {'usuario': usuario})
-    
-def login_usuario(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        email = data.get('email')
-        password = data.get('password')
-        usuario = authenticate(request, username=email, password=password)
-
-        if usuario is not None:
-            # Verificar si el correo está verificado
-            if not usuario.email_verificado:
-                return JsonResponse({'error': 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.'}, status=400)
-            
-            login(request, usuario)
             
 
 def logout_view(request):

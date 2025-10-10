@@ -45,9 +45,13 @@ body {
 }
 
 .left h1 {
-    color: #0c6980;
+    color: #057EA7;
     margin-bottom: 20px;
     text-align: center;
+}
+.iniciar {
+  text-align: center;
+  color: #00B4D8;
 }
 
 .right{
