@@ -1,0 +1,446 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Perfil - DermaChat</title>
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0B4F6C;
+            font-family: "Roboto", Arial, sans-serif;
+            color: #3D3D3D;
+            line-height: 1.6;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .edit-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            background: #FBFBFF;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            margin-top: 50px;
+        }
+        
+        .home-icon {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #01BAEF;
+            font-size: 24px;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            z-index: 10;
+        }
+        
+        .home-icon:hover {
+            color: #0685AE;
+        }
+        
+        .edit-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 25px;
+            border-bottom: 3px solid #01BAEF;
+        }
+        
+        .edit-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0B4F6C;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: bold;
+            color: #0B4F6C;
+            margin-bottom: 10px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #B8B8BA;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            background: #FBFBFF;
+            color: #3D3D3D;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #01BAEF;
+            box-shadow: 0 0 0 3px rgba(1, 186, 239, 0.1);
+        }
+        
+        .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 100px;
+            box-sizing: border-box;
+        }
+        
+        .form-textarea:focus {
+            outline: none;
+            border-color: #0B4F6C;
+        }
+        
+        .photo-upload {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .current-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid #0685AE;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+        }
+        
+        .current-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .current-photo i {
+            font-size: 32px;
+            color: #666;
+        }
+        
+        .file-input-wrapper {
+            flex: 1;
+        }
+        
+        .file-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-input:hover {
+            border-color: #0685AE;
+            background: #f0f8f0;
+        }
+        
+        .password-section {
+            background: #FBFBFF;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 25px;
+            border-left: 5px solid #0685AE;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .password-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0B4F6C;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-primary {
+            background: #01BAEF;
+            color: #FBFBFF;
+        }
+        
+        .btn-primary:hover {
+            background: #0685AE;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(1, 186, 239, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #0685AE;
+            color: #FBFBFF;
+        }
+        
+        .btn-secondary:hover {
+            background: #0B4F6C;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(6, 133, 174, 0.4);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #4CAF50;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .back-link:hover {
+            color: #45a049;
+        }
+        
+        .error-message {
+            background: #FBFBFF;
+            color: #dc3545;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 5px solid #dc3545;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
+        }
+        
+        .help-text {
+            font-size: 14px;
+            color: #B8B8BA;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .edit-container {
+                margin: 20px;
+                padding: 20px;
+            }
+            
+            .home-icon {
+                top: 15px;
+                left: 15px;
+                font-size: 20px;
+            }
+            
+            .photo-upload {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="{% url 'profile' %}" class="home-icon" title="Volver al perfil">
+        <i class="fas fa-home"></i>
+    </a>
+    
+    <div class="edit-container">
+        
+        <div class="edit-header">
+            <h1 class="edit-title">
+                <i class="fas fa-edit"></i>
+                Editar Perfil
+            </h1>
+        </div>
+        
+        {% if error %}
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+            </div>
+        {% endif %}
+        
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label" for="nombre">
+                    <i class="fas fa-user"></i> Nombre completo
+                </label>
+                <input type="text" id="nombre" name="nombre" class="form-input" 
+                       value="{{ usuario.nombre }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="email">
+                    <i class="fas fa-envelope"></i> Correo electrónico
+                </label>
+                <input type="email" id="email" name="email" class="form-input" 
+                       value="{{ usuario.email }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="edad">
+                    <i class="fas fa-calendar-alt"></i> Edad
+                </label>
+                <input type="number" id="edad" name="edad" class="form-input" 
+                       value="{{ usuario.edad|default:'' }}" min="1" max="120">
+                <div class="help-text">Opcional - Solo números</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-camera"></i> Foto de perfil
+                </label>
+                <div class="photo-upload">
+                    <div class="current-photo">
+                        {% if usuario.foto_perfil %}
+                            <img src="{{ usuario.foto_perfil.url }}" alt="Foto actual">
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="foto_perfil" name="foto_perfil" 
+                               class="file-input" accept="image/*">
+                        <div class="help-text">Selecciona una nueva imagen (JPG, PNG, GIF)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="password-section">
+                <div class="password-title">
+                    <i class="fas fa-lock"></i>
+                    Cambiar contraseña
+                </div>
+                <div class="help-text" style="margin-bottom: 15px;">
+                    Deja estos campos vacíos si no quieres cambiar tu contraseña
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="current_password">
+                        <i class="fas fa-key"></i> Contraseña actual
+                    </label>
+                    <input type="password" id="current_password" name="current_password" 
+                           class="form-input" placeholder="Ingresa tu contraseña actual">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="new_password">
+                        <i class="fas fa-lock"></i> Nueva contraseña
+                    </label>
+                    <input type="password" id="new_password" name="new_password" 
+                           class="form-input" placeholder="Mínimo 8 caracteres">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="confirm_password">
+                        <i class="fas fa-lock"></i> Confirmar nueva contraseña
+                    </label>
+                    <input type="password" id="confirm_password" name="confirm_password" 
+                           class="form-input" placeholder="Repite la nueva contraseña">
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Guardar Cambios
+                </button>
+                
+                <a href="{% url 'profile' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        // Preview de imagen antes de subir
+        document.getElementById('foto_perfil').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const currentPhoto = document.querySelector('.current-photo');
+                    currentPhoto.innerHTML = `<img src="${e.target.result}" alt="Nueva foto">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Validación de contraseñas
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            const currentPassword = document.getElementById('current_password').value;
+            
+            // Si se está intentando cambiar la contraseña
+            if (newPassword || confirmPassword || currentPassword) {
+                if (!currentPassword) {
+                    alert('Debes ingresar tu contraseña actual para cambiarla');
+                    e.preventDefault();
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    alert('Las nuevas contraseñas no coinciden');
+                    e.preventDefault();
+                    return;
+                }
+                
+                if (newPassword.length < 8) {
+                    alert('La nueva contraseña debe tener al menos 8 caracteres');
+                    e.preventDefault();
+                    return;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

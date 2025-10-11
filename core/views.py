@@ -151,12 +151,17 @@ def post_reg(request):
     return render(request, 'core/PostRegister.html', context)
 
 def profile(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
     usuario = request.user  # necesario para acceder directamente al usuario
     return render(request, 'core/profile.html', {'usuario': usuario})
 
 
 
 def edit_profile(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+        
     usuario = request.user
     
     if request.method == 'POST':
@@ -214,6 +219,7 @@ def edit_profile(request):
         usuario.save()
         print("DEBUG: Usuario guardado. Foto actual:", usuario.foto_perfil)
         
+        # Redirigir con mensaje de éxito
         return redirect('profile')
     
     return render(request, 'core/edit_profile.html', {'usuario': usuario})
