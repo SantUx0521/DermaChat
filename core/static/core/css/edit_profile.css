@@ -22,16 +22,18 @@ body {
     position: absolute;
     top: 20px;
     left: 20px;
-    color: #01BAEF;
-    font-size: 24px;
+    font-size: 50px;
+    color: #00B4D8;
     text-decoration: none;
-    transition: color 0.3s ease;
-    z-index: 10;
-}
-
-.home-icon:hover {
-    color: #0685AE;
-}
+    z-index: 999;
+    transition: transform 0.2s ease;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .home-icon:hover {
+    transform: scale(1.2);
+    color: #00B4D8;
+  }
 
 .edit-header {
     text-align: center;
