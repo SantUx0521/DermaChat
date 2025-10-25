@@ -4,18 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Inicio</title>
-    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/chat.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'core/css/materialize.css' %}">
 </head>
 <body>
     <main class="main">
         <div class="top">
-            <div class="logo">
-                <div class="logo-img"></div>
-            </div>
-            
+             <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
+                <i class="fas fa-home"></i>
+            </a>
             <div class="nav" id="nav">
                 <div class="signup">
                     {% if user.is_authenticated %}
@@ -30,6 +28,7 @@
                                 {% endif %}
                             </div>
                         </button>
+
                         <div class="dropdown-menu" id="dropdownMenu">
                             <a href="{% url 'profile' %}" class="dropdown-item">
                                 <i class="fas fa-user"></i>
@@ -40,6 +39,7 @@
                                     Cerrar sesión
                             </a>
                         </div>
+
                         <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
                             {% csrf_token %}    
                         </form>
@@ -55,71 +55,29 @@
         </div>
 
         <div class="center">
-            <div>
-                <h1 class="h1">Derma Chat</h1>
+            <div class="logo">
+                <div class="logo-img"></div>
             </div>
-            <form method="post" action="{% url 'chat' %}" enctype="multipart/form-data">
-                {% csrf_token %}
-                <button type="submit" class="go-button">
-                    <i class="fa fa-comments" aria-hidden="true"></i> CHARLEMOS
-                </button>
-            </form>
+            <h1 class="h1">Bienvenido a DermaChat {{ usuario.nombre }}</h1>
         </div>
 
         <div class="bottom">
-            <section class="section">
-                <h2>¿Quiénes somos?</h2>
-                <p>
-                    Somos una plataforma dedicada a ofrecer un analisis sobre el acne mediante inteligencia artificial, con el fin de ayudar a las personas a quitar sus dudas sobre su piel.
-                    En Derma Chat, podras verificar tus dudas antes de acudir a un profesional, pero recuerda que siempre es mejor acudir a un dermatólogo.
-                </p>
-            </section>
-
-            <section class="section alt">
-                <h2>¿Cómo funciona?</h2>
-                <p>
-                    Derma chat utiliza un modelo de inteligencia artificial entrenado con una amplia base de datos de imágenes y casos de acné para proporcionar análisis y recomendaciones personalizadas.
-                    Los usuarios pueden subir imágenes de su piel y recibir un análisis sobre su condición y en caso de detectar un problema mayor, se les recomienda acudir a un dermatólogo.
-                </p>
-            </section>
-
-            <section class="section">
-                <h2>Informacion utilizada</h2>
-                <p>
-                    <a href= "https://www.ncbi.nlm.nih.gov/books/NBK459173"> National library of medicine</a>
-                </p>
-                <p>
-                    <a href= "https://www.msdmanuals.com/es/hogar/trastornos-de-la-piel/acné-y-trastornos-relacionados/acné?ruleredirectid=752"> MSD</a>
-                </p>
-                <p>
-                    <a href= "https://www.sciencedirect.com/science/article/abs/pii/S1245178922465012"> ScienceDirect</a>
-                </p>
-            </section>
+            <div class="textito">
+            <form method="get" action="#" class="search-bar">
+            <div class="searching">
+                <button type="button" class="upload-btn">
+                <i class="fas fa-image"></i>
+                </button>
+                <input type="text" name="q" placeholder="Comunicate conmigo..." class="custom-search">
+                <button type="submit" class="search-btn">
+                <i class="fas fa-search"></i>
+                </button>
+            </div>
+            </form>
+            </div>
         </div>
-        <footer class="page-footer light-blue darken-3">
-          <div class="container">
-            <div class="row">
-              <div class="col l6 s12">
-                <h5 class="white-text">DermaChat</h5>
-                <p class="grey-text text-lighten-4">Resolvemos dudas sobre tu acne.</p>
-              </div>
-              <div class="col l4 offset-l2 s12">
-                <h5 class="white-text">Links</h5>
-                <ul>
-                  <li><a class="grey-text text-lighten-3" href="{% url 'chat' %}">Chat</a></li>
-                  <a class="grey-text text-lighten-3">Contacto: 3016609839</a>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="footer-copyright">
-            <div class="container">
-            © 2025 Todos los derechos reservados.
-            </div>
-          </div>
-        </footer>
-    </main>
 
+    </main>
     <script src="{% static 'core/js/main.js' %}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -140,5 +98,3 @@
             }
         });
     </script>
-</body>
-</html>
