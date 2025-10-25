@@ -1,0 +1,224 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Roboto", Arial, sans-serif;
+    background-color: #FBFBFF;
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.home-icon {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 50px;
+    color: #00B4D8;
+    text-decoration: none;
+    z-index: 999;
+    transition: transform 0.2s ease;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .home-icon:hover {
+    transform: scale(1.2);
+    color: #00B4D8;
+  }
+
+
+.top {
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    width: 100%;
+    justify-content: flex-end;
+}
+.signup ul {
+    list-style: none;
+    display: flex;
+    gap: 1rem;
+}
+
+.signup ul li a {
+    margin-left: 1rem;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    background: transparent;
+    color: #FBFBFF;
+    border: 2px solid #FBFBFF;
+    transition: 0.3s;
+    display: inline-block;
+    margin-left: auto;
+}
+
+.signup ul li a:hover {
+    background: #01BAEF;
+    border: #01BAEF;
+    transform: translateY(-2px);
+    box-shadow: gray;
+}
+
+.account-dropdown {
+    position: relative;
+}
+
+.account-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    background: #0077b6;
+    color: white;
+    cursor: pointer;
+}
+
+.account-avatar img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.account-avatar i {
+    font-size: 1.2rem;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 110%;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    min-width: 150px;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    color: #333;
+    text-decoration: none;
+    transition: background 0.3s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background: #f0f0f0;
+}
+
+.h1 {
+    font-size: 32px;
+    font-weight: bold;
+    justify-content: center;
+    color: #057EA7;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.logo {
+    background: #0B4F6C;
+    border-radius: 50%;
+    width: 300px;
+    height: 300px;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    position: relative;
+}
+
+.logo-img {
+    width: 300px;
+    height: 300px;
+    background-image: url('img/logoDerma.png');
+    background-size: 500px, 500px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.search-bar {
+    width: 80%;
+    max-width: none;
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+}
+
+.searching {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 15px 85px 15px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 30px;
+    font-size: 16px;
+    color: #333;
+    transition: all 0.3s ease;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.search-bar input:focus {
+    outline: none;
+    border-color: #01BAEF;
+    box-shadow: 0 4px 15px rgba(1, 186, 239, 0.2);
+}
+
+.upload-btn {
+    position: absolute;
+    right: 50px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    font-size: 1.3rem;
+}
+
+.search-btn {
+    position: absolute;
+    right: 15px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    font-size: 1.3rem;
+}
+
+.upload-btn:hover, .search-btn:hover {
+    color: #01BAEF;
+}

@@ -27,6 +27,7 @@ urlpatterns = [
     #verificar Email
     path('verificar-email/<str:token>/', views.verificar_email, name='verificar_email'),
     path('reenviar-verificacion/', views.reenviar_verificacion, name='reenviar_verificacion'),
+    path('chat/', views.chat, name='chat'),
 
     # Endpoints API
     path('api/', include(router.urls)),

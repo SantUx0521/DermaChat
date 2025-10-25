@@ -28,7 +28,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 def index(request):
-    return render(request, 'core/index.html')
+    usuario = request.user 
+    return render(request, 'core/index.html', {'usuario': usuario})
 
 
 
@@ -350,3 +351,9 @@ class MensajeViewSet(viewsets.ModelViewSet):
         conversacion = get_object_or_404(Conversacion, id=conversacion_id, usuario=self.request.user)
 
         serializer.save(conversacion=conversacion)
+
+def chat(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    usuario = request.user  
+    return render(request, 'core/chat.html', {'usuario': usuario})
