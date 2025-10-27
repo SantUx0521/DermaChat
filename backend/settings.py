@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-from decouple import config
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -131,4 +131,10 @@ AUTH_USER_MODEL = 'core.Usuario'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Voiceflow API Key
-VOICEFLOW_API_KEY = config('VOICEFLOW_API_KEY', default='')
+from decouple import Config, RepositoryEnv
+env_file = BASE_DIR / '.env'
+if env_file.exists():
+    env_config = Config(RepositoryEnv(env_file))
+    VOICEFLOW_API_KEY = env_config('VOICEFLOW_API_KEY', default='')
+else:
+    VOICEFLOW_API_KEY = config('VOICEFLOW_API_KEY', default='')

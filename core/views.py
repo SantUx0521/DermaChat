@@ -361,8 +361,11 @@ def chat(request):
         usuario = request.user  
         # Pasar la API key de Voiceflow al contexto
         from django.conf import settings
+        api_key = settings.VOICEFLOW_API_KEY
+        print(f"DEBUG: API Key cargada: {api_key[:20] if api_key else 'VACÍA'}...")
+        print(f"DEBUG: Longitud de API Key: {len(api_key) if api_key else 0}")
         context = {
             'usuario': usuario,
-            'voiceflow_api_key': settings.VOICEFLOW_API_KEY
+            'voiceflow_api_key': api_key or ''
         }
         return render(request, 'core/chat.html', context)

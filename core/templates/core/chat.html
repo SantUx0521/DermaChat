@@ -107,9 +107,13 @@
 
             // Configuración de Voiceflow
             const VF_API_KEY = '{{ voiceflow_api_key }}';
+            console.log('VF_API_KEY desde template:', VF_API_KEY);
+            console.log('Longitud de API Key:', VF_API_KEY ? VF_API_KEY.length : 0);
+            
             const USER_ID = 'user_' + Math.random().toString(36).substr(2, 9);
             const CHAT_API_URL = 'https://general-runtime.voiceflow.com/state/user/' + USER_ID;
             const INTERACT_API_URL = 'https://general-runtime.voiceflow.com/state/user/' + USER_ID + '/interact';
+            let sessionInitialized = false;
 
             const chatForm = document.getElementById('chatForm');
             const messageInput = document.getElementById('messageInput');
@@ -117,6 +121,33 @@
             const chatMessages = document.getElementById('chatMessages');
             const logo = document.getElementById('logo');
             const welcomeTitle = document.getElementById('welcome-title');
+
+            // Inicializar sesión de Voiceflow
+            async function initializeSession() {
+                try {
+                    console.log('Inicializando sesión de Voiceflow...');
+                    const response = await fetch(INTERACT_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': VF_API_KEY
+                        },
+                        body: JSON.stringify({
+                            request: {
+                                type: 'launch'
+                            }
+                        })
+                    });
+                    console.log('Sesión inicializada:', response.status);
+                    sessionInitialized = true;
+                } catch (error) {
+                    console.error('Error al inicializar sesión:', error);
+                    sessionInitialized = true; // Continuar de todas formas
+                }
+            }
+
+            // Inicializar al cargar la página
+            initializeSession();
 
             // Enviar mensaje
             chatForm.addEventListener('submit', async function(e) {
@@ -138,6 +169,10 @@
                 showTypingIndicator();
 
                 try {
+                    console.log('Enviando mensaje a Voiceflow:', message);
+                    console.log('URL:', INTERACT_API_URL);
+                    console.log('API Key:', VF_API_KEY);
+                    
                     // Enviar mensaje a Voiceflow
                     const response = await fetch(INTERACT_API_URL, {
                         method: 'POST',
@@ -146,31 +181,51 @@
                             'Authorization': VF_API_KEY
                         },
                         body: JSON.stringify({
-                            type: 'text',
-                            payload: message
+                            request: {
+                                type: 'text',
+                                payload: message
+                            }
                         })
                     });
 
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
                     const data = await response.json();
+                    console.log('Response data completo:', JSON.stringify(data, null, 2));
                     
                     // Ocultar indicador de escritura
                     hideTypingIndicator();
 
                     // Procesar respuestas
-                    if (data) {
-                        // Buscar mensajes de texto en la respuesta
-                        if (data.trace && Array.isArray(data.trace)) {
-                            data.trace.forEach(trace => {
-                                if (trace.type === 'text' && trace.payload && trace.payload.message) {
-                                    addMessage(trace.payload.message, 'bot');
-                                }
-                            });
-                        }
+                    let hasMessages = false;
+                    
+                    // La respuesta de Voiceflow es un array directamente
+                    if (Array.isArray(data)) {
+                        console.log('Procesando array de respuestas:', data.length);
+                        data.forEach(item => {
+                            console.log('Item:', item);
+                            
+                            // Si es tipo 'text', extraer el mensaje
+                            if (item.type === 'text' && item.payload && item.payload.message) {
+                                const message = item.payload.message;
+                                addMessage(message, 'bot');
+                                hasMessages = true;
+                            }
+                        });
+                    }
+                    
+                    if (!hasMessages) {
+                        console.log('No se encontraron mensajes en la estructura esperada');
+                        addMessage('No recibí una respuesta válida del asistente.', 'bot');
                     }
                 } catch (error) {
                     hideTypingIndicator();
-                    console.error('Error:', error);
-                    addMessage('Lo siento, hubo un error al procesar tu mensaje. Por favor intenta de nuevo.', 'bot');
+                    console.error('Error completo:', error);
+                    addMessage('Lo siento, hubo un error al procesar tu mensaje: ' + error.message, 'bot');
                 }
             });
 
