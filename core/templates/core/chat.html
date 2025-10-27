@@ -55,20 +55,27 @@
         </div>
 
         <div class="center">
-            <div class="logo">
+            <div class="logo" id="logo">
                 <div class="logo-img"></div>
             </div>
-            <h1 class="h1">Bienvenido a DermaChat {{ usuario.nombre }}</h1>
+            <h1 class="h1" id="welcome-title">Bienvenido a DermaChat {{ usuario.nombre }}</h1>
+        </div>
+
+        <!-- Área de chat -->
+        <div class="chat-container" id="chatContainer" style="display: none;">
+            <div class="chat-messages" id="chatMessages">
+                <!-- Los mensajes se agregarán aquí dinámicamente -->
+            </div>
         </div>
 
         <div class="bottom">
             <div class="textito">
-            <form method="get" action="#" class="search-bar">
+            <form method="post" action="#" class="search-bar" id="chatForm">
             <div class="searching">
                 <button type="button" class="upload-btn">
                 <i class="fas fa-image"></i>
                 </button>
-                <input type="text" name="q" placeholder="Comunicate conmigo..." class="custom-search">
+                <input type="text" name="q" placeholder="Comunicate conmigo..." class="custom-search" id="messageInput">
                 <button type="submit" class="search-btn">
                 <i class="fas fa-search"></i>
                 </button>
@@ -78,6 +85,7 @@
         </div>
 
     </main>
+
     <script src="{% static 'core/js/main.js' %}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -95,6 +103,99 @@
                         dropdownMenu.classList.remove('show');
                     }
                 });
+            }
+
+            // Configuración de Voiceflow
+            const VF_API_KEY = '{{ voiceflow_api_key }}';
+            const USER_ID = 'user_' + Math.random().toString(36).substr(2, 9);
+            const CHAT_API_URL = 'https://general-runtime.voiceflow.com/state/user/' + USER_ID;
+            const INTERACT_API_URL = 'https://general-runtime.voiceflow.com/state/user/' + USER_ID + '/interact';
+
+            const chatForm = document.getElementById('chatForm');
+            const messageInput = document.getElementById('messageInput');
+            const chatContainer = document.getElementById('chatContainer');
+            const chatMessages = document.getElementById('chatMessages');
+            const logo = document.getElementById('logo');
+            const welcomeTitle = document.getElementById('welcome-title');
+
+            // Enviar mensaje
+            chatForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const message = messageInput.value.trim();
+                if (!message) return;
+
+                // Mostrar mensaje del usuario
+                addMessage(message, 'user');
+                messageInput.value = '';
+
+                // Ocultar logo y mostrar chat
+                logo.style.display = 'none';
+                welcomeTitle.style.display = 'none';
+                chatContainer.style.display = 'block';
+
+                // Mostrar indicador de escritura
+                showTypingIndicator();
+
+                try {
+                    // Enviar mensaje a Voiceflow
+                    const response = await fetch(INTERACT_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': VF_API_KEY
+                        },
+                        body: JSON.stringify({
+                            type: 'text',
+                            payload: message
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    // Ocultar indicador de escritura
+                    hideTypingIndicator();
+
+                    // Procesar respuestas
+                    if (data) {
+                        // Buscar mensajes de texto en la respuesta
+                        if (data.trace && Array.isArray(data.trace)) {
+                            data.trace.forEach(trace => {
+                                if (trace.type === 'text' && trace.payload && trace.payload.message) {
+                                    addMessage(trace.payload.message, 'bot');
+                                }
+                            });
+                        }
+                    }
+                } catch (error) {
+                    hideTypingIndicator();
+                    console.error('Error:', error);
+                    addMessage('Lo siento, hubo un error al procesar tu mensaje. Por favor intenta de nuevo.', 'bot');
+                }
+            });
+
+            function addMessage(message, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                messageDiv.textContent = message;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function showTypingIndicator() {
+                const typing = document.createElement('div');
+                typing.className = 'message bot typing';
+                typing.textContent = 'Escribiendo...';
+                typing.id = 'typing-indicator';
+                chatMessages.appendChild(typing);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function hideTypingIndicator() {
+                const typing = document.getElementById('typing-indicator');
+                if (typing) {
+                    typing.remove();
+                }
             }
         });
     </script>

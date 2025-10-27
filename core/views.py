@@ -355,5 +355,14 @@ class MensajeViewSet(viewsets.ModelViewSet):
 def chat(request):
     if not request.user.is_authenticated:
         return redirect('login')
-    usuario = request.user  
-    return render(request, 'core/chat.html', {'usuario': usuario})
+    
+    # Manejar tanto GET como POST
+    if request.method == 'GET' or request.method == 'POST':
+        usuario = request.user  
+        # Pasar la API key de Voiceflow al contexto
+        from django.conf import settings
+        context = {
+            'usuario': usuario,
+            'voiceflow_api_key': settings.VOICEFLOW_API_KEY
+        }
+        return render(request, 'core/chat.html', context)
