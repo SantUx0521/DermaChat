@@ -2,15 +2,6 @@ import os
 import PyPDF2
 
 def read_pdf_text(pdf_path):
-    """
-    Reads the text from a PDF file.
-    
-    Args:
-        pdf_path (str): Path to the PDF file.
-        
-    Returns:
-        str: Text content of the PDF.
-    """
     try:
         with open(pdf_path, 'rb') as pdf_file:
             reader = PyPDF2.PdfReader(pdf_file)

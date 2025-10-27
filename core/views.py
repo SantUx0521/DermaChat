@@ -95,6 +95,7 @@ def register_page(request):
             nombre=nombre,
             password=make_password(password),
         )
+        login(request, usuario)
         return render(request, 'core/index.html')
     return render(request, 'core/register.html')
 
@@ -356,10 +357,8 @@ def chat(request):
     if not request.user.is_authenticated:
         return redirect('login')
     
-    # Manejar tanto GET como POST
     if request.method == 'GET' or request.method == 'POST':
         usuario = request.user  
-        # Pasar la API key de Voiceflow al contexto
         from django.conf import settings
         api_key = settings.VOICEFLOW_API_KEY
         print(f"DEBUG: API Key cargada: {api_key[:20] if api_key else 'VACÍA'}...")

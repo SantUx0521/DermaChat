@@ -12,6 +12,15 @@ body {
     min-height: 100vh;
 }
 
+.main {
+  animation: fadeIn 0.7s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .bottom {
     display: flex;
     flex-direction: column;

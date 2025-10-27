@@ -13,7 +13,6 @@ router.register(r'conversaciones', ConversacionViewSet, basename='conversacion')
 router.register(r'mensajes', MensajeViewSet, basename='mensaje')
 
 urlpatterns = [
-    # Vistas HTML
     path('', views.index, name='index'),
     path('login-page/', views.login_page, name='login'),  # página de login HTML
     path('register-page/', views.register_page, name='register'),  # página de registro HTML
@@ -24,12 +23,11 @@ urlpatterns = [
     path('eliminar-cuenta-usuario/', views.eliminar_cuenta_usuario, name='eliminar_cuenta_usuario'),
     path('login-usuario/', views.login_usuario, name='login_usuario'),
     path('logout/', views.logout_view, name='logout'),
-    #verificar Email
+
     path('verificar-email/<str:token>/', views.verificar_email, name='verificar_email'),
     path('reenviar-verificacion/', views.reenviar_verificacion, name='reenviar_verificacion'),
     path('chat/', views.chat, name='chat'),
 
-    # Endpoints API
     path('api/', include(router.urls)),
     path('api/registro/', RegistroUsuarioView.as_view(), name='api_registro'),
     path('api/login/', LoginView.as_view(), name='api_login'),

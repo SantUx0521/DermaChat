@@ -17,7 +17,7 @@ body {
     top: 20px;
     left: 20px;
     font-size: 50px;
-    color: #00B4D8;
+    color: #0077B6;
     text-decoration: none;
     z-index: 999;
     transition: transform 0.2s ease;
@@ -223,18 +223,14 @@ body {
     color: #01BAEF;
 }
 
-/* Estilos para el área de chat */
 .chat-container {
     width: 80%;
-    max-width: 800px;
     margin: 2rem auto;
-    height: 60vh;
-    overflow: hidden;
+    height: 70vh;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    background: white;
     border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
 .chat-messages {
@@ -266,13 +262,15 @@ body {
 }
 
 .message.user {
+    font: Roboto;
     align-self: flex-end;
-    background: #01BAEF;
+    background: #0077B6;
     color: white;
     border-bottom-right-radius: 4px;
 }
 
 .message.bot {
+    font: Roboto;
     align-self: flex-start;
     background: #f0f0f0;
     color: #333;
@@ -303,7 +301,6 @@ body {
     background: #00A8D8;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .chat-container {
         width: 95%;
