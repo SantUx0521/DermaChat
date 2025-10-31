@@ -22,6 +22,8 @@ urlpatterns = [
     path('edit-profile/', views.edit_profile, name='edit_profile'),
     path('eliminar-cuenta-usuario/', views.eliminar_cuenta_usuario, name='eliminar_cuenta_usuario'),
     path('login-usuario/', views.login_usuario, name='login_usuario'),
+    path('recuperar/', views.recuperar_contraseña, name='recuperar'),
+    path('reestablecer/<str:token>/', views.restablecer_contraseña, name='restablecer'),
     path('logout/', views.logout_view, name='logout'),
 
     path('verificar-email/<str:token>/', views.verificar_email, name='verificar_email'),

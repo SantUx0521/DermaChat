@@ -26,6 +26,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     foto_perfil = models.ImageField(upload_to='perfiles/', null=True, blank=True)
     email_verificado = models.BooleanField(default=False)
     es_premium = models.BooleanField(default=False)
+    token_recuperacion = models.CharField(max_length=100, blank=True, null=True)
     token_verificacion = models.CharField(max_length=100, blank=True, null=True)
     objects = UsuarioManager()
 

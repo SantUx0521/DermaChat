@@ -304,7 +304,6 @@ class ConversacionViewSet(viewsets.ModelViewSet):
         return Conversacion.objects.filter(usuario=self.request.user).order_by('-creada_en')
 
     def perform_create(self, serializer):
-        # metodo para asignar automaticamente al usuario
         serializer.save(usuario=self.request.user)
 
     @action(detail=True, methods=['post'])
@@ -316,15 +315,13 @@ class ConversacionViewSet(viewsets.ModelViewSet):
         if not contenido:
             return Response({'error': 'El contenido no puede estar vacío.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # guardar un mensaje del usuario
         Mensaje.objects.create(
             conversacion=conversacion,
             remitente='usuario',
             contenido=contenido
         )
 
-        # metodo provicional para simular respuesta
-        #aqui se debe añadir la APi de la IA
+        # metodo para simular respuesta
         respuesta = f"Hola {request.user.nombre}, recibí tu mensaje: '{contenido}'"
         Mensaje.objects.create(
             conversacion=conversacion,
@@ -368,3 +365,57 @@ def chat(request):
             'voiceflow_api_key': api_key or ''
         }
         return render(request, 'core/chat.html', context)
+    
+def recuperar_contraseña(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            usuario = Usuario.objects.get(email=email)
+            token = secrets.token_urlsafe(32)
+            usuario.token_recuperacion = token
+            usuario.save()
+
+            reset_link = f'http://{request.get_host()}/reestablecer/{token}/'
+            send_mail(
+                'Recupera tu contraseña en DermaChat',
+                f'Por favor, restablece tu contraseña haciendo clic en el siguiente enlace:\n\n{reset_link}\n\n'
+                f'Este enlace puede usarse una sola vez.',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+
+            return render(request, 'core/olvidoContraseña.html', {
+                'mensaje': 'Se ha enviado un email con el enlace para restablecer tu contraseña.'
+            })
+        except Usuario.DoesNotExist:
+            return render(request, 'core/olvidoContraseña.html', {
+                'error': 'No se encontró ninguna cuenta con este correo electrónico.'
+            })
+
+    return render(request, 'core/olvidoContraseña.html')
+
+def restablecer_contraseña(request, token):
+    try:
+        usuario = Usuario.objects.get(token_recuperacion=token)
+    except Usuario.DoesNotExist:
+        return render(request, 'core/newPassword.html', {
+            'error': 'El enlace de recuperación no es válido o ya fue usado.'
+        })
+
+    if request.method == 'POST':
+        new_password = request.POST.get('nueva_contraseña')
+        if len(new_password) >= 8:
+            usuario.set_password(new_password)
+            usuario.token_recuperacion = None
+            usuario.save()
+            return render(request, 'core/newPassword.html', {
+                'mensaje': 'Tu contraseña ha sido restablecida con éxito.'
+            })
+        else:
+            return render(request, 'core/newPassword.html', {
+                'error': 'La contraseña debe tener al menos 8 caracteres.'
+            })
+
+    return render(request, 'core/newPassword.html', {'usuario': usuario})
+        
