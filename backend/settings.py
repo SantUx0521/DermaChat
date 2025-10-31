@@ -138,3 +138,12 @@ if env_file.exists():
     VOICEFLOW_API_KEY = env_config('VOICEFLOW_API_KEY', default='')
 else:
     VOICEFLOW_API_KEY = config('VOICEFLOW_API_KEY', default='')
+
+#Enviar emails
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'chatderma481@gmail.com'
+EMAIL_HOST_PASSWORD = 'tvce cndz cocm casp'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
