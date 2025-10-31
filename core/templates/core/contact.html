@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contacto</title>
+  <link rel="stylesheet" href="{% static 'core/css/contact.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/materialize.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body class="fade-in">
+        <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
+            <i class="fas fa-home"></i>
+        </a>
+    <div class="main">
+        {% if user.is_authenticated %}
+            <h1> Bienvenido {{ usuario.nombre }}. ¿En que podemos ayudarte hoy? </h1>
+        {% else %}
+            <h1> Bienvenido, cuentanos tu problema </h1>
+        {% endif %}
+            <form method="POST" class="contact-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="mensaje">Puedes agrandar el recuadro manualmente.</label>
+                <textarea name="mensaje" id="mensaje" rows="6" placeholder="Describe tu problema..." required></textarea>
+            </div>
+            <button type="submit" class="btn">Enviar</button>
+            </form>
+            {% if enviado %}
+            <p class="success">Tu mensaje ha sido enviado correctamente. Será atendido lo antes posible</p>
+            {% endif %}
+            {% if error %}
+            <p class="error"> {{ error }}</p>
+            {% endif %}
+    </div>
+</body>
+</html>

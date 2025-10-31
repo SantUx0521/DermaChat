@@ -418,4 +418,25 @@ def restablecer_contraseña(request, token):
             })
 
     return render(request, 'core/newPassword.html', {'usuario': usuario})
-        
+
+def contacto(request):
+    usuario = request.user 
+    if request.method == 'POST':
+        mensaje = request.POST.get('mensaje')
+        if not mensaje.strip():
+                return render(request, 'core/contact.html', {'error': 'El mensaje no puede estar vacío.'})
+        asunto = "Nuevo mensaje de contacto"
+        cuerpo = f"{mensaje}"
+
+        try:
+            send_mail(
+                asunto,
+                cuerpo,
+                settings.DEFAULT_FROM_EMAIL,  
+                ['chatderma481@gmail.com'],     
+                fail_silently=False,
+            )
+            return render(request, 'core/contact.html', {'enviado': True})
+        except Exception as e:
+            return render(request, 'core/contact.html', {'error': 'No se pudo enviar el mensaje.'})
+    return render(request, 'core/contact.html', {'usuario': usuario})
