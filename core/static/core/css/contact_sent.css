@@ -34,7 +34,6 @@ body.fade-out {
     color: #057EA7;
     display: flex;
     justify-content: center;
-    height: 600px;
     padding: 5%;
     width: 50%;
     background-color: #FBFBFF;
@@ -43,7 +42,11 @@ body.fade-out {
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
-input[type="submiter"]{
+.center .p{
+    left: 50%;
+}
+
+.btn{
     width: 50%;
     height: 50px;
     border: 1px solid;
@@ -54,11 +57,11 @@ input[type="submiter"]{
     cursor: pointer;
     outline: none;
 }
-input[type="submiter"]:hover{
+.btn:hover{
     background: #01BAEF;
     border: 2px solid #01BAEF;  
     color: #fff; 
-    transition: 1.2s;
+    transition: 1s;
 }
 
 .Username {

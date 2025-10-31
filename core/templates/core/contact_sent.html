@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mensaje enviado</title>
+  <link rel="stylesheet" href="{% static 'core/css/contact_sent.css' %}">
+</head>
+
+<body>
+  <div class="main">
+    <div class="center">
+        <h1>Tu mensaje ha sido enviado correctamente</h1>
+        <p>Nos pondremos en contacto contigo pronto.</p>
+        <button onclick="window.location.href='{% url 'index' %}'" class="btn">
+        Volver al inicio
+        </button>
+    </div>
+  </div>
+</body>
+</html>
