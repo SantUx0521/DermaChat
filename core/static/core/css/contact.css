@@ -18,8 +18,8 @@ body.fade-in {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateX(30px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 body.fade-out {
@@ -41,18 +41,6 @@ body.fade-out {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-.h1 {
-    color: #057EA7;
-    margin-bottom: 20px;
-    text-align: center;
-}
-.h2 {
-    color: #057EA7;
-    margin-bottom: 20px;
-    text-align: center;
-
 }
 
 input[type="submit"]{
