@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Recuperar contraseña</title>
+    <link rel="stylesheet" href="{% static 'core/css/olvidoContraseña.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'core/css/materialize.css' %}">
+</head>
+
+<body class="fade-in">
+
+        <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
+            <i class="fas fa-home"></i>
+        </a>
+    <div class="main">
+        <div class="center">
+            <h1>Recuperar contraseña</h1>
+            <p>Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña</p>
+
+            <form method="post" id="recuperarForm" class="recuperar-form">
+                {% csrf_token %}
+                
+                <div class="Username">
+                    <input type="email" name="email" id="email" required>
+                    <label for="email">Correo electronico</label>
+                    <span></span>
+                </div>
+
+                <input type="submit" value="Enviar enlace de recuperación" class="btn-enviar">
+
+                {% if mensaje %}
+                    <p id="mensaje" style="color: green; margin-top: 15px;">{{ mensaje }}</p>
+                {% endif %}
+                {% if error %}
+                    <p id="mensaje" style="color: red; margin-top: 15px;">{{ error }}</p>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('recuperarForm');
+        form.addEventListener('submit', function (e) {
+            const email = document.getElementById('email').value.trim();
+            if (email === '') {
+                e.preventDefault();
+                alert('Por favor, ingresa tu correo electrónico.');
+            }
+        });
+    </script>
+</body>
+</html>
