@@ -436,7 +436,10 @@ def contacto(request):
                 ['chatderma481@gmail.com'],     
                 fail_silently=False,
             )
-            return render(request, 'core/contact.html', {'enviado': True})
+            return redirect('contact_sent')
         except Exception as e:
             return render(request, 'core/contact.html', {'error': 'No se pudo enviar el mensaje.'})
     return render(request, 'core/contact.html', {'usuario': usuario})
+
+def contacto_enviado(request):
+    return render(request, 'core/contact_sent.html')

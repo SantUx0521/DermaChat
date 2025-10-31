@@ -26,6 +26,7 @@ urlpatterns = [
     path('reestablecer/<str:token>/', views.restablecer_contraseña, name='restablecer'),
     path('logout/', views.logout_view, name='logout'),
     path('Contacto/', views.contacto, name='contact'),
+     path('contacto/enviado/', views.contacto_enviado, name='contact_sent'),
 
     path('verificar-email/<str:token>/', views.verificar_email, name='verificar_email'),
     path('reenviar-verificacion/', views.reenviar_verificacion, name='reenviar_verificacion'),
