@@ -26,10 +26,13 @@ urlpatterns = [
     path('reestablecer/<str:token>/', views.restablecer_contraseña, name='restablecer'),
     path('logout/', views.logout_view, name='logout'),
     path('Contacto/', views.contacto, name='contact'),
+     path('contacto/enviado/', views.contacto_enviado, name='contact_sent'),
 
     path('verificar-email/<str:token>/', views.verificar_email, name='verificar_email'),
     path('reenviar-verificacion/', views.reenviar_verificacion, name='reenviar_verificacion'),
     path('chat/', views.chat, name='chat'),
+    path('select-plan/', views.select_plan, name='select_plan'),
+    path('payment-options/', views.payment_options, name='payment_options'),
 
     path('api/', include(router.urls)),
     path('api/registro/', RegistroUsuarioView.as_view(), name='api_registro'),

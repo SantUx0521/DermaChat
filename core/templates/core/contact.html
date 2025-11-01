@@ -5,34 +5,97 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contacto</title>
-  <link rel="stylesheet" href="{% static 'core/css/contact.css' %}">
   <link rel="stylesheet" href="{% static 'core/css/materialize.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/contact.css' %}">
 </head>
 <body class="fade-in">
+    <div class="top">
         <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
             <i class="fas fa-home"></i>
         </a>
-    <div class="main">
-        {% if user.is_authenticated %}
-            <h1> Bienvenido {{ usuario.nombre }}. ¿En que podemos ayudarte hoy? </h1>
-        {% else %}
-            <h1> Bienvenido, cuentanos tu problema </h1>
-        {% endif %}
-            <form method="POST" class="contact-form">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="mensaje">Puedes agrandar el recuadro manualmente.</label>
-                <textarea name="mensaje" id="mensaje" rows="6" placeholder="Describe tu problema..." required></textarea>
+        <div class="nav" id="nav">
+            <div class="signup">
+                {% if user.is_authenticated %}
+                <div class="account-dropdown">
+                    <button class="account-btn" id="accountBtn">
+                        <div class="profile-name">{{ usuario.nombre }}</div>
+                        <div class="account-avatar">
+                            {% if user.foto_perfil %}
+                                <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <a href="{% url 'profile' %}" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Ver perfil
+                        </a>
+                        <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                                Cerrar sesión
+                        </a>
+                    </div>
+                    <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
+                        {% csrf_token %}    
+                    </form>
+                </div>
+                {% else %}
+                <ul>
+                    <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
+                    <li><a href="{% url 'register' %}">Registrarse</a></li>
+                </ul>
+                {% endif %}
             </div>
-            <button type="submit" class="btn">Enviar</button>
-            </form>
-            {% if enviado %}
-            <p class="success">Tu mensaje ha sido enviado correctamente. Será atendido lo antes posible</p>
-            {% endif %}
-            {% if error %}
-            <p class="error"> {{ error }}</p>
-            {% endif %}
+        </div>
     </div>
+
+    <div class="center">
+        <div class="main">
+            {% if user.is_authenticated %}
+                <h1> Bienvenido {{ usuario.nombre }}. ¿En que podemos ayudarte hoy? </h1>
+            {% else %}
+                <h1> Bienvenido, cuentanos tu problema </h1>
+            {% endif %}
+                <form method="POST" class="contact-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="mensaje">Puedes agrandar el recuadro manualmente.</label>
+                    <textarea name="mensaje" id="mensaje" rows="6" placeholder="Describe tu problema..." required></textarea>
+                </div>
+                <button type="submit" class="btn">Enviar</button>
+                </form>
+                {% if enviado %}
+                <p class="success">Tu mensaje ha sido enviado correctamente. Será atendido lo antes posible</p>
+                {% endif %}
+                {% if error %}
+                <p class="error"> {{ error }}</p>
+                {% endif %}
+        </div>
+    </div>
+    <script src="{% static 'core/js/main.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const accountBtn = document.getElementById('accountBtn');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            if (accountBtn && dropdownMenu) {
+                accountBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('show');
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!accountBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
