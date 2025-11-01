@@ -96,7 +96,8 @@ def register_page(request):
             password=make_password(password),
         )
         login(request, usuario)
-        return render(request, 'core/index.html')
+        # Redirigir a selección de plan después del registro
+        return redirect('select_plan')
     return render(request, 'core/register.html')
 
 def login_usuario(request):
@@ -443,3 +444,62 @@ def contacto(request):
 
 def contacto_enviado(request):
     return render(request, 'core/contact_sent.html')
+
+def select_plan(request):
+    """Vista para seleccionar plan (Gratuito o Premium) después del registro o cambiar de plan"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    if request.method == 'POST':
+        plan_choice = request.POST.get('plan')
+        usuario = request.user
+        
+        if plan_choice == 'premium':
+            # Si ya es premium, solo redirigir a index
+            if usuario.es_premium:
+                return redirect('profile')
+            # Redirigir a opciones de pago
+            return redirect('payment_options')
+        elif plan_choice == 'free':
+            # Usuario elige plan gratuito
+            if usuario.es_premium:
+                # Si tenía premium, cambiar a gratuito
+                usuario.es_premium = False
+                usuario.save()
+            # Continuar al index
+            return redirect('profile')
+    
+    usuario = request.user
+    return render(request, 'core/select_plan.html', {'usuario': usuario})
+
+def payment_options(request):
+    """Vista para mostrar opciones de pago y beneficios del plan Premium"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    if request.method == 'POST':
+        # Aquí iría la lógica de procesamiento de pago
+        # Por ahora, solo marcamos al usuario como premium
+        payment_plan = request.POST.get('payment_plan')
+        
+        if payment_plan:
+            # En una implementación real, aquí se procesaría el pago
+            # Por ahora, marcamos al usuario como premium
+            usuario = request.user
+            usuario.es_premium = True
+            usuario.save()
+            return redirect('index')
+    
+    usuario = request.user
+    context = {
+        'usuario': usuario,
+        'premium_benefits': [
+            'Análisis ilimitado de imágenes',
+            'Prioridad en el análisis',
+            'Acceso a reportes detallados',
+            'Soporte prioritario',
+            'Sin límites de uso diario',
+            'Historial completo de análisis'
+        ]
+    }
+    return render(request, 'core/payment_options.html', context)

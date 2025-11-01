@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleccionar Plan - DermaChat</title>
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'core/css/select_plan.css' %}">
+</head>
+<body class="fade-in">
+    <div class="top">
+        <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
+            <i class="fas fa-home"></i>
+        </a>
+        <div class="nav" id="nav">
+            <div class="signup">
+                {% if user.is_authenticated %}
+                <div class="account-dropdown">
+                    <button class="account-btn" id="accountBtn">
+                        <div class="profile-name">{{ usuario.nombre }}</div>
+                        <div class="account-avatar">
+                            {% if user.foto_perfil %}
+                                <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <a href="{% url 'profile' %}" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Ver perfil
+                        </a>
+                        <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                                Cerrar sesión
+                        </a>
+                    </div>
+                    <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
+                        {% csrf_token %}    
+                    </form>
+                </div>
+                {% else %}
+                <ul>
+                    <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
+                    <li><a href="{% url 'register' %}">Registrarse</a></li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="plan-selection-container">
+        <div class="plan-header">
+            <h1>
+                {% if usuario.es_premium %}
+                    Cambiar tu Plan
+                {% else %}
+                    ¡Bienvenido a DermaChat, {{ usuario.nombre }}!
+                {% endif %}
+            </h1>
+            <p class="subtitle">
+                {% if usuario.es_premium %}
+                    Actualmente tienes el plan <span class="current-plan premium-text">Premium</span>. 
+                    Puedes cambiar a plan gratuito o mantener tu plan actual.
+                {% else %}
+                    Elige el plan que mejor se adapte a tus necesidades
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="plans-wrapper">
+            <form method="POST" action="{% url 'select_plan' %}" class="plans-form">
+                {% csrf_token %}
+                
+                <!-- Plan Gratuito -->
+                <div class="plan-card free-plan {% if not usuario.es_premium %}current-plan-card{% endif %}">
+                    {% if not usuario.es_premium %}
+                    <div class="current-badge">Tu plan actual</div>
+                    {% endif %}
+                    <div class="plan-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h2>Plan Gratuito</h2>
+                    <div class="plan-price">
+                        <span class="price">$0 COP</span>
+                        <span class="period">/mes</span>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Análisis básico de imágenes</li>
+                        <li><i class="fas fa-check"></i> Hasta 5 análisis por día</li>
+                        <li><i class="fas fa-check"></i> Respuestas estándar</li>
+                        <li><i class="fas fa-check"></i> Soporte por email</li>
+                    </ul>
+                    <button type="submit" name="plan" value="free" class="plan-button free-button">
+                        {% if not usuario.es_premium %}
+                            Continuar Gratis
+                        {% else %}
+                            Cambiar a Gratuito
+                        {% endif %}
+                    </button>
+                </div>
+
+                <!-- Plan Premium -->
+                <div class="plan-card premium-plan featured {% if usuario.es_premium %}current-plan-card{% endif %}">
+                    {% if usuario.es_premium %}
+                    <div class="current-badge">Tu plan actual</div>
+                    {% else %}
+                    <div class="badge">Recomendado</div>
+                    {% endif %}
+                    <div class="plan-icon">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <h2>Plan Premium</h2>
+                    <div class="plan-price">
+                        <span class="price">$39.900 COP</span>
+                        <span class="period">/mes</span>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Análisis ilimitado de imágenes</li>
+                        <li><i class="fas fa-check"></i> Prioridad en el análisis</li>
+                        <li><i class="fas fa-check"></i> Acceso a reportes detallados</li>
+                        <li><i class="fas fa-check"></i> Soporte prioritario 24/7</li>
+                        <li><i class="fas fa-check"></i> Sin límites de uso</li>
+                        <li><i class="fas fa-check"></i> Historial completo de análisis</li>
+                    </ul>
+                    <button type="submit" name="plan" value="premium" class="plan-button premium-button">
+                        {% if usuario.es_premium %}
+                            Mantener Premium
+                        {% else %}
+                            Elegir Premium
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <p class="plan-footer">Puedes cambiar tu plan en cualquier momento desde tu perfil</p>
+    </div>
+
+    <script src="{% static 'core/js/main.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const accountBtn = document.getElementById('accountBtn');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            if (accountBtn && dropdownMenu) {
+                accountBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('show');
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!accountBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
