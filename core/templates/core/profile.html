@@ -19,7 +19,7 @@
         <div class="profile-header">
             <div class="profile-avatar">
                 {% if usuario.foto_perfil %}
-                    <img src="{{ usuario.foto_perfil.url }}" alt="Foto de perfil">
+                    <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil de {{ usuario.nombre }}">
                 {% else %}
                     <i class="fas fa-user"></i>
                 {% endif %}

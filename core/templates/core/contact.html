@@ -24,7 +24,7 @@
                         <div class="profile-name">{{ usuario.nombre }}</div>
                         <div class="account-avatar">
                             {% if user.foto_perfil %}
-                                <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil">
+                               <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil de {{ usuario.nombre }}">
                             {% else %}
                                 <i class="fas fa-user"></i>
                             {% endif %}
