@@ -34,6 +34,10 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
+.href{
+    color: #0B4F6C;
+}
+
 .top {
     padding: 1rem 2rem;
     display: flex;
