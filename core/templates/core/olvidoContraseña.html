@@ -24,8 +24,8 @@
                 {% csrf_token %}
                 
                 <div class="Username">
-                    <input type="email" name="email" id="email" required>
-                    <label for="email">Correo electronico</label>
+                    <input type="email" name="email" id="id_email" required>
+                    <label for="id_email">Correo electrónico</label>
                     <span></span>
                 </div>
 
@@ -51,5 +51,13 @@
             }
         });
     </script>
+    <script>
+    document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      window.location.href = "{% url 'index' %}";
+         }
+     });
+    </script>
+
 </body>
 </html>
