@@ -23,23 +23,23 @@
           <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
           <input type="hidden" name="tipo_usuario" value="cliente">
           <div class="Username">
-              <input type="text" name="nombre" required>
-              <label>Nombre de usuario</label>
+              <input type="text" name="nombre" id="id_nombre" required>
+              <label for="id_nombre">Nombre de usuario</label>
               <span></span>
           </div>
           <div class="Username">
-              <input type="email" name="email" required>
-              <label>Correo electrónico</label>
+              <input type="email" name="email" id="id_email" required>
+              <label for="id_email">Correo electrónico</label>
               <span></span>
           </div>
           <div class="Username">
-              <input type="password" name="password" id="password" required>
-              <label>Contraseña</label>
+              <input type="password" name="password" id="id_password" required>
+              <label for="id_password">Contraseña</label>
               <span></span>
           </div>
           <div class="Username">
-              <input type="password" name="confirm_password" id="confirm_password" required>
-              <label>Confirmar contraseña</label>
+              <input type="password" name="confirm_password" id="id_confirm_password" required>
+              <label for="id_confirm_password">Confirmar contraseña</label>
               <span></span>
           </div>
           <p id="password_error" style="color: red; display: none;">Las contraseñas no coinciden</p>
