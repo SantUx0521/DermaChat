@@ -24,11 +24,12 @@
         </div>
         
         {% if error %}
-            <div class="error-message">
-                <i class="fas fa-exclamation-triangle"></i>
-                {{ error }}
-            </div>
+        <div class="error-message" role="alert" aria-live="assertive">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            {{ error }}
+        </div>
         {% endif %}
+
         
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}

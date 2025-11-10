@@ -16,8 +16,13 @@
       <div class="left">
         <h1>Registro</h1>
         {% if error %}
-        <p style="color: red; text-align: center;">{{ error }}</p>
+        <p role="alert" aria-live="assertive" class="error-message" style="color: red; text-align: center;">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> {{ error }}
+        </p>
         {% endif %}
+        <p id="password_error" role="alert" aria-live="assertive" style="color: red; display: none;">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Las contraseñas no coinciden
+        </p>
         <form method="post" action="{% url 'register' %}" id="registerForm">
           {% csrf_token %}
           <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
