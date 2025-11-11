@@ -310,3 +310,10 @@ body {
         font-size: 1rem;
     }
 }
+
+/* Solución ultra-específica y segura */
+.custom-nav {
+    background-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
