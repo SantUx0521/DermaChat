@@ -70,17 +70,35 @@
 
         <div class="bottom">
             <div class="textito">
-            <form method="post" action="#" class="search-bar" id="chatForm">
-            <div class="searching">
-                <button type="button" class="upload-btn">
-                <i class="fas fa-image"></i>
-                </button>
-                <input type="text" name="q" placeholder="Comunicate conmigo..." class="custom-search" id="messageInput">
-                <button type="submit" class="search-btn">
-                <i class="fas fa-search"></i>
-                </button>
+                <!-- Contenedor de vista previa -->
+            <div id="imagePreviewContainer" class="image-preview-container" style="display: none;">
+                <img id="imagePreview" src="" alt="Vista previa de imagen" />
+                <div class="image-preview-info">
+                    <span id="fileName"></span>
+                    <button id="cancelImageBtn" class="cancel-btn" title="Cancelar imagen">✖</button>
+                </div>
             </div>
+                            
+            <form method="post" action="#" class="search-bar" id="chatForm" enctype="multipart/form-data">
+                <div class="searching">
+                    <!-- Botón para subir imagen -->
+                    <button type="button" class="upload-btn" id="uploadImageBtn">
+                        <i class="fas fa-image"></i>
+                    </button>
+
+                    <!-- Input oculto para seleccionar imagen -->
+                    <input type="file" id="imageInput" name="image" accept="image/*" style="display: none;">
+
+                    <!-- Campo de texto -->
+                    <input type="text" name="q" placeholder="Comunicate conmigo..." class="custom-search" id="messageInput">
+
+                    <!-- Botón para enviar -->
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
             </form>
+
             </div>
         </div>
         <script>
@@ -129,6 +147,7 @@
             const logo = document.getElementById('logo');
             const welcomeTitle = document.getElementById('welcome-title');
 
+
             // Inicializar sesión de Voiceflow
             async function initializeSession() {
                 try {
@@ -159,7 +178,50 @@
             // Enviar mensaje
             chatForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                
+                // enviar imagen
+                if (selectedFile) {
+                    addMessage(`Imagen: ${selectedFile.name}`, 'user');
+                    showChatInterface();
+                    showTypingIndicator();
+
+                    const formData = new FormData();
+                    formData.append('image', selectedFile);
+
+                    try {
+                        const response = await fetch("/api/analyze_image/", {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-CSRFToken': getCSRFToken() }
+                        });
+
+                        hideTypingIndicator();
+
+                        if (!response.ok) throw new Error('Error en el servidor');
+
+                        // Cambia esto para que acepte JSON (como te dije antes)
+                        const data = await response.json();
+                        if (data.html) {
+                            addMessage(data.html, 'bot');
+                        } else {
+                            const html = await response.text();
+                            addMessage(html, 'bot');  // fallback por si sigues devolviendo HTML
+                        }
+
+                    } catch (error) {
+                        hideTypingIndicator();
+                        addMessage('Error al enviar la imagen.', 'bot');
+                    } finally {
+                        // Limpiar vista previa
+                        selectedFile = null;
+                        imageInput.value = '';
+                        imagePreviewContainer.style.display = 'none';
+                        imagePreview.src = '';
+                        document.getElementById('fileName').textContent = '';
+                    }
+                    return;
+                }
+
+                //enviar texto
                 const message = messageInput.value.trim();
                 if (!message) return;
 
@@ -234,6 +296,8 @@
                     console.error('Error completo:', error);
                     addMessage('Lo siento, hubo un error al procesar tu mensaje: ' + error.message, 'bot');
                 }
+                
+
             });
 
             function addMessage(message, sender) {
@@ -259,5 +323,112 @@
                     typing.remove();
                 }
             }
+            //cargar imagenes 
+            const uploadImageBtn = document.getElementById('uploadImageBtn');
+            const imageInput = document.getElementById('imageInput');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            const imagePreview = document.getElementById('imagePreview');
+            const cancelImageBtn = document.getElementById('cancelImageBtn');
+
+            if (!chatForm || !imageInput || !uploadImageBtn) {
+                console.warn('Algunos elementos del chat/imagen no se encontraron en el DOM');
+                return;
+            }
+            let selectedFile = null;
+                // Reiniciar vista previa al cargar la página
+            if (imagePreviewContainer) {
+                imagePreviewContainer.style.display = 'none';
+                imagePreview.src = '';
+                const fileName = document.getElementById('fileName');
+                if (fileName) fileName.textContent = '';
+                imageInput.value = ''; // por si quedó algo cargado
+            }
+
+
+            // VISTA PREVIA 
+            uploadImageBtn.addEventListener('click', () => {
+                imageInput.value = ''; // 👈 limpia antes de abrir el selector
+                imageInput.click();
+            });
+            //  Reiniciar vista previa al cargar la página 
+
+
+            imageInput.addEventListener('change', (e) => {
+
+                const file = e.target.files[0];
+                if (!file) return;
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    imagePreview.src = event.target.result;
+                    //imagePreview.src = ev.target.result;
+                    const isMobile = window.innerWidth <= 480;
+
+                        // Asignamos el tamaño perfecto según dispositivo
+                        if (isMobile) {
+                            imagePreview.style.width = '78px';
+                            imagePreview.style.height = '78px';
+                        } else {
+                            imagePreview.style.width = '200px';
+                            imagePreview.style.height = '200px';
+                        }
+
+                        // Estilos comunes (siempre aplican)
+                        imagePreview.style.objectFit = 'cover';
+                        imagePreview.style.borderRadius = '16px';
+                        imagePreview.style.boxShadow = '0 6px 18px rgba(0,0,0,0.3)';
+                        imagePreview.style.border = '4px solid white';
+                        imagePreview.style.display = 'block';
+                    document.getElementById('fileName').textContent = file.name;
+                    imagePreviewContainer.style.display = 'flex';
+                };
+
+                reader.readAsDataURL(file);
+            });
+            //eliminar la imagen cargada
+            cancelImageBtn.addEventListener('click', () => {
+                selectedFile = null;
+                imageInput.value = ''; // limpia el input
+                imagePreviewContainer.style.display = 'none';
+                imagePreview.src = '';
+                document.getElementById('fileName').textContent = '';
+            });
+            //Envio
+
+            // === FUNCIONES AUXILIARES ===
+            function addMessage(htmlContent, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                messageDiv.innerHTML = htmlContent;  // ← innerHTML, no textContent
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function showTypingIndicator() {
+                const typing = document.createElement('div');
+                typing.className = 'message bot typing';
+                typing.textContent = 'Escribiendo...';
+                typing.id = 'typing-indicator';
+                chatMessages.appendChild(typing);
+            }
+
+            function hideTypingIndicator() {
+                const typing = document.getElementById('typing-indicator');
+                if (typing) typing.remove();
+            }
+
+            function getCSRFToken() {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                return csrfToken || '';
+            }
+            function showChatInterface() {
+                if (chatContainer.style.display === 'block') return; // ya visible
+                
+                logo.style.display = 'none';
+                welcomeTitle.style.display = 'none';
+                chatContainer.style.display = 'block';
+            }
+
+
         });
     </script>

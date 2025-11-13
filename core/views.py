@@ -26,6 +26,8 @@ from rest_framework.exceptions import PermissionDenied
 from .models import  Conversacion, Mensaje ,Usuario
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from django.shortcuts import render, redirect
+from django.core.files.storage import FileSystemStorage
 
 def index(request):
     usuario = request.user 
@@ -503,3 +505,48 @@ def payment_options(request):
         ]
     }
     return render(request, 'core/payment_options.html', context)
+
+def analyze_image(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'No autenticado'}, status=401)
+
+    if request.method != 'POST' or 'image' not in request.FILES:
+        return JsonResponse({'error': 'No se recibió imagen'}, status=400)
+
+    image_file = request.FILES['image']
+    fs = FileSystemStorage()
+    filename = fs.save(image_file.name, image_file)
+    image_url = fs.url(filename)
+    image_path = fs.path(filename)
+
+    # =============================================
+    # AQUÍ IRÁ TU MODELO DE IA (por ahora simulamos)
+    # =============================================
+    # Ejemplo futuro:
+    # description = analizar_con_modelo(image_path)
+
+    # Aqui se debe colocar el analisis de imagen
+    respuestas_posibles = [
+        "texto placeholder"
+    ]
+    
+    import random
+    description = random.choice(respuestas_posibles)
+
+    # =============================================
+
+    # Respuesta del bot con imagen + análisis real
+    bot_html = f'''
+    <div style="text-align:left; margin:15px 0;">
+        <img src="{image_url}" style="max-width:280px; width:100%; border-radius:16px; 
+             box-shadow:0 6px 20px rgba(0,0,0,0.2); display:block; margin-bottom:12px;">
+        <div style="background:#e3f2fd; padding:14px 18px; border-radius:18px; 
+             display:inline-block; max-width:92%; border-left:4px solid #1976d2;">
+            <p style="margin:0; color:#1565c0; font-size:15px; line-height:1.5;">
+                <strong>Análisis preliminar:</strong><br>{description}
+            </p>
+        </div>
+    </div>
+    '''
+
+    return JsonResponse({'html': bot_html})
