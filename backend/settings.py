@@ -149,3 +149,8 @@ if env_file.exists():
     EMAIL_HOST_USER = env_config('EMAIL_HOST_USER', default='')
     EMAIL_HOST_PASSWORD = env_config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+#Mercado Pago
+if env_file.exists():
+    env_config = Config(RepositoryEnv(env_file))
+    MERCADOPAGO_ACCESS_TOKEN = env_config('MERCADOPAGO_ACCESS_TOKEN', default='')

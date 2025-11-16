@@ -28,6 +28,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.shortcuts import render, redirect
 from django.core.files.storage import FileSystemStorage
+import mercadopago
 
 def index(request):
     usuario = request.user 
@@ -474,23 +475,64 @@ def select_plan(request):
     usuario = request.user
     return render(request, 'core/select_plan.html', {'usuario': usuario})
 
-def payment_options(request):
-    """Vista para mostrar opciones de pago y beneficios del plan Premium"""
+def select_plan(request):
+    """Vista para seleccionar plan (Gratuito o Premium) después del registro o cambiar de plan"""
     if not request.user.is_authenticated:
         return redirect('login')
     
     if request.method == 'POST':
-        # Aquí iría la lógica de procesamiento de pago
-        # Por ahora, solo marcamos al usuario como premium
+        plan_choice = request.POST.get('plan')
+        usuario = request.user
+
+        if plan_choice == 'premium':
+            if usuario.es_premium:
+                return redirect('profile')
+            return redirect('payment_options')
+        elif plan_choice == 'free':
+            if usuario.es_premium:
+                usuario.es_premium = False
+                usuario.save()
+
+            return redirect('profile')
+    
+    usuario = request.user
+    return render(request, 'core/select_plan.html', {'usuario': usuario})
+
+def payment_options(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    usuario = request.user
+    
+    if request.method == 'POST':
         payment_plan = request.POST.get('payment_plan')
         
         if payment_plan:
-            # En una implementación real, aquí se procesaría el pago
-            # Por ahora, marcamos al usuario como premium
-            usuario = request.user
-            usuario.es_premium = True
-            usuario.save()
-            return redirect('index')
+            sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+            preference_data = {
+                "items": [
+                    {
+                        "title": "Suscripción Premium DermaChat",
+                        "quantity": 1,
+                        "currency_id": "COP",
+                        "unit_price": 1
+                    }
+                ],
+                "payer": {
+                    "email": usuario.email,
+                },
+                "back_urls": {
+                    "success": request.build_absolute_uri("/payment/success/"),
+                    "failure": request.build_absolute_uri("/payment/failure/"),
+                    "pending": request.build_absolute_uri("/payment/pending/")
+                },
+                "auto_return": "approved",
+            }
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+            print(preference_response)
+
+            return redirect(preference["init_point"])
     
     usuario = request.user
     context = {
@@ -505,6 +547,19 @@ def payment_options(request):
         ]
     }
     return render(request, 'core/payment_options.html', context)
+
+def payment_success(request):
+    user = request.user
+    if user.is_authenticated:
+        user.es_premium = True
+        user.save()
+    return render(request, 'core/payment_success.html')
+
+def payment_failure(request):
+    return render(request, 'core/payment_failure.html')
+
+def payment_pending(request):
+    return render(request, 'core/payment_pending.html')
 
 def analyze_image(request):
     if not request.user.is_authenticated:

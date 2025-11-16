@@ -26,7 +26,10 @@ urlpatterns = [
     path('reestablecer/<str:token>/', views.restablecer_contraseña, name='restablecer'),
     path('logout/', views.logout_view, name='logout'),
     path('Contacto/', views.contacto, name='contact'),
-     path('contacto/enviado/', views.contacto_enviado, name='contact_sent'),
+    path('contacto/enviado/', views.contacto_enviado, name='contact_sent'),
+    path('payment/success/', views.payment_success, name='payment_success'),
+    path('payment/failure/', views.payment_failure, name='payment_failure'),
+    path('payment/pending/', views.payment_pending, name='payment_pending'),
 
     path('verificar-email/<str:token>/', views.verificar_email, name='verificar_email'),
     path('reenviar-verificacion/', views.reenviar_verificacion, name='reenviar_verificacion'),
