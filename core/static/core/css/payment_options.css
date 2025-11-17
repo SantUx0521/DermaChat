@@ -34,6 +34,11 @@ body {
     gap: 1rem;
 }
 
+.paypal{
+    display: flex;
+    justify-content: center;
+}
+
 .payment-header h1 i {
     color: #01BAEF;
 }
