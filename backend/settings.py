@@ -154,3 +154,14 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 if env_file.exists():
     env_config = Config(RepositoryEnv(env_file))
     MERCADOPAGO_ACCESS_TOKEN = env_config('MERCADOPAGO_ACCESS_TOKEN', default='')
+
+#Roboflow API
+if env_file.exists():
+    env_config = Config(RepositoryEnv(env_file))
+    ROBOFLOW_API_KEY = env_config('ROBOFLOW_API_KEY', default='')
+    ROBOFLOW_MODEL_ID = env_config('ROBOFLOW_MODEL_ID', default='')
+    ROBOFLOW_VERSION = env_config('ROBOFLOW_VERSION', default='1')
+else:
+    ROBOFLOW_API_KEY = config('ROBOFLOW_API_KEY', default='')
+    ROBOFLOW_MODEL_ID = config('ROBOFLOW_MODEL_ID', default='')
+    ROBOFLOW_VERSION = config('ROBOFLOW_VERSION', default='1')
