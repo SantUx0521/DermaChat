@@ -575,20 +575,289 @@ def analyze_image(request):
     image_path = fs.path(filename)
 
     # =============================================
-    # AQUÍ IRÁ TU MODELO DE IA (por ahora simulamos)
+    # ANÁLISIS CON ROBOFLOW
     # =============================================
-    # Ejemplo futuro:
-    # description = analizar_con_modelo(image_path)
-
-    # Aqui se debe colocar el analisis de imagen
-    respuestas_posibles = [
-        "texto placeholder"
-    ]
+    from django.conf import settings
+    import requests
+    import os
     
-    import random
-    description = random.choice(respuestas_posibles)
+    analysis_result = None
+    severity = None
+    detected_features = []
+    
+    try:
+        # Llamar a la API de Roboflow
+        roboflow_api_key = getattr(settings, 'ROBOFLOW_API_KEY', '')
+        roboflow_model_id = getattr(settings, 'ROBOFLOW_MODEL_ID', '')
+        roboflow_version = getattr(settings, 'ROBOFLOW_VERSION', '1')
+        
+        if roboflow_api_key and roboflow_model_id:
+            # Construir la URL de la API de Roboflow
+            # Formato puede ser:
+            # - https://detect.roboflow.com/{workspace}/{project}/{version}?api_key={api_key}
+            # - https://detect.roboflow.com/{model_id}/{version}?api_key={api_key}
+            # Si model_id ya incluye workspace/project, no agregar version en la URL
+            if '/' in roboflow_model_id:
+                # Ya incluye workspace/project
+                roboflow_url = f"https://detect.roboflow.com/{roboflow_model_id}?api_key={roboflow_api_key}"
+            else:
+                # Solo model_id, agregar version
+                roboflow_url = f"https://detect.roboflow.com/{roboflow_model_id}/{roboflow_version}?api_key={roboflow_api_key}"
+            
+            print(f"DEBUG: Llamando a Roboflow")
+            print(f"DEBUG: URL: {roboflow_url}")
+            print(f"DEBUG: Model ID: {roboflow_model_id}")
+            print(f"DEBUG: Version: {roboflow_version}")
+            print(f"DEBUG: API Key (primeros 10 chars): {roboflow_api_key[:10]}...")
+            print(f"DEBUG: Ruta de imagen: {image_path}")
+            print(f"DEBUG: Tamaño de imagen: {os.path.getsize(image_path)} bytes")
+            
+            # Enviar la imagen a Roboflow
+            # Roboflow acepta imágenes como base64 o como archivo
+            try:
+                import base64
+                
+                # Leer la imagen y codificarla en base64
+                with open(image_path, 'rb') as img_file:
+                    img_data = base64.b64encode(img_file.read()).decode('utf-8')
+                
+                # Roboflow acepta base64 en el body
+                # La URL ya incluye api_key como parámetro
+                response = requests.post(
+                    roboflow_url,
+                    data=img_data,
+                    headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                    timeout=30
+                )
+                
+                # Si falla con base64, intentar con file upload (sin api_key en params porque ya está en URL)
+                if response.status_code != 200:
+                    print(f"DEBUG: Intento con base64 falló ({response.status_code}): {response.text[:200]}")
+                    print(f"DEBUG: Intentando con file upload...")
+                    with open(image_path, 'rb') as img_file:
+                        files = {'file': (os.path.basename(image_path), img_file, 'image/jpeg')}
+                        response = requests.post(
+                            roboflow_url,
+                            files=files,
+                            timeout=30
+                        )
+                
+                print(f"DEBUG: Respuesta de Roboflow - Status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    try:
+                        predictions = response.json()
+                    except Exception as e:
+                        print(f"ERROR: No se pudo parsear JSON de Roboflow: {e}")
+                        print(f"DEBUG: Respuesta raw: {response.text[:500]}")
+                        raise
+                    
+                    print(f"DEBUG: Predicciones de Roboflow (completo): {json.dumps(predictions, indent=2)}")
+                    
+                    # Procesar las predicciones de Roboflow
+                    # Roboflow puede devolver diferentes formatos según el tipo de modelo
+                    detections = []
+                    
+                    # Intentar diferentes estructuras de respuesta
+                    if 'predictions' in predictions:
+                        detections = predictions['predictions']
+                    elif 'detections' in predictions:
+                        detections = predictions['detections']
+                    elif isinstance(predictions, list):
+                        detections = predictions
+                    elif 'results' in predictions:
+                        detections = predictions['results']
+                    
+                    print(f"DEBUG: Número de detecciones encontradas: {len(detections)}")
+                    print(f"DEBUG: Estructura de la primera detección (si existe): {detections[0] if detections else 'N/A'}")
+                    
+                    # Contar detecciones por tipo
+                    acne_count = 0
+                    red_pimple_count = 0
+                    blackhead_count = 0
+                    dark_spot_count = 0
+                    nodules_count = 0
+                    papules_count = 0
+                    pustules_count = 0
+                    whitehead_count = 0
+                    
+                    for detection in detections:
+                        # Roboflow puede devolver diferentes estructuras
+                        class_name = ''
+                        confidence = 0
+                        
+                        if isinstance(detection, dict):
+                            class_name = detection.get('class', detection.get('name', '')).lower()
+                            confidence = detection.get('confidence', detection.get('score', 0))
+                        elif isinstance(detection, str):
+                            class_name = detection.lower()
+                            confidence = 1.0
+                        
+                        print(f"DEBUG: Detección - Clase: {class_name}, Confianza: {confidence}")
+                        
+                        if confidence > 0.5:  # Solo considerar detecciones con confianza > 50%
+                            normalized_class = class_name.replace('-', ' ').replace('_', ' ')
+                            if any(keyword in normalized_class for keyword in ['acne', 'acné', 'pimple', 'granito', 'zit']):
+                                if any(keyword in normalized_class for keyword in ['red', 'rojo', 'rojizo', 'inflamed']):
+                                    red_pimple_count += 1
+                                else:
+                                    acne_count += 1
+                            elif any(keyword in normalized_class for keyword in ['papule', 'pápula']):
+                                papules_count += 1
+                            elif any(keyword in normalized_class for keyword in ['pustule', 'pústula']):
+                                pustules_count += 1
+                            elif any(keyword in normalized_class for keyword in ['blackhead', 'punto negro', 'comedón', 'comedon']):
+                                blackhead_count += 1
+                            elif any(keyword in normalized_class for keyword in ['whitehead', 'punto blanco']):
+                                whitehead_count += 1
+                            elif any(keyword in normalized_class for keyword in ['dark spot', 'mancha oscura', 'spot', 'lesion', 'lesión', 'stain']):
+                                dark_spot_count += 1
+                            elif any(keyword in normalized_class for keyword in ['nodule', 'nódulo', 'quiste', 'cyst']):
+                                nodules_count += 1
+                            # Si la clase es directamente "leve", "moderado", "grave"
+                            elif class_name in ['leve', 'moderado', 'grave', 'severo', 'severe']:
+                                severity = class_name if class_name != 'severo' else 'grave'
+                                detected_features = [f"Clasificación directa: {severity}"]
+                                analysis_result = f"Severidad: {severity}. Clasificación directa del modelo."
+                                print(f"DEBUG: Severidad directa detectada en la clase: {severity}")
+                                break
+                    
+                    # Determinar severidad basada en el número de detecciones
+                    total_detections = (
+                        acne_count
+                        + blackhead_count
+                        + red_pimple_count
+                        + dark_spot_count
+                        + nodules_count
+                        + papules_count
+                        + pustules_count
+                        + whitehead_count
+                    )
+                    print(
+                        "DEBUG: Total detecciones - "
+                        f"Lesiones generales: {acne_count}, "
+                        f"Puntos negros: {blackhead_count}, "
+                        f"Granos rojos: {red_pimple_count}, "
+                        f"Dark spots: {dark_spot_count}, "
+                        f"Nódulos: {nodules_count}, "
+                        f"Pápulas: {papules_count}, "
+                        f"Pústulas: {pustules_count}, "
+                        f"Puntos blancos: {whitehead_count}, "
+                        f"Total: {total_detections}"
+                    )
+                    
+                    # Verificar si Roboflow devolvió una clasificación directa de severidad
+                    severity_direct = None
+                    if 'severity' in predictions:
+                        severity_direct = predictions.get('severity')
+                    elif 'classification' in predictions:
+                        severity_direct = predictions.get('classification')
+                    
+                    if severity_direct:
+                        severity = str(severity_direct).lower()
+                        if severity not in ['leve', 'moderado', 'grave', 'severo']:
+                            # Normalizar valores
+                            if severity in ['mild', 'light', 'leve']:
+                                severity = "leve"
+                            elif severity in ['moderate', 'moderado']:
+                                severity = "moderado"
+                            elif severity in ['severe', 'grave', 'severo']:
+                                severity = "grave"
+                            else:
+                                severity = "moderado"  # Default si no reconocemos el valor
+                        print(f"DEBUG: Severidad directa del modelo: {severity}")
+                    elif total_detections == 0:
+                        severity = "leve"  # Sin detecciones = leve
+                    elif total_detections < 5:
+                        severity = "leve"
+                    elif total_detections < 15:
+                        severity = "moderado"
+                    else:
+                        severity = "grave"
+                    
+                    # Construir descripción de características detectadas
+                    features = []
+                    if blackhead_count > 0:
+                        features.append(f"{blackhead_count} punto(s) negro(s)")
+                    if red_pimple_count > 0:
+                        features.append(f"{red_pimple_count} grano(s) rojizo(s)")
+                    if acne_count > 0:
+                        features.append(f"{acne_count} lesión(es) de acné")
+                    if dark_spot_count > 0:
+                        features.append(f"{dark_spot_count} mancha(s) oscura(s)")
+                    if papules_count > 0:
+                        features.append(f"{papules_count} pápula(s)")
+                    if pustules_count > 0:
+                        features.append(f"{pustules_count} pústula(s)")
+                    if whitehead_count > 0:
+                        features.append(f"{whitehead_count} punto(s) blanco(s)")
+                    if nodules_count > 0:
+                        features.append(f"{nodules_count} nódulo(s)/quiste(s)")
+                    
+                    detected_features = features
+                    
+                    # Crear el texto de análisis para Voiceflow
+                    if features:
+                        analysis_text = f"Severidad: {severity}. Se detectaron: {', '.join(features)}."
+                    else:
+                        analysis_text = f"Severidad: {severity}. No se detectaron características específicas."
+                    
+                    analysis_result = analysis_text
+                    print(f"DEBUG: Análisis final - Severidad: {severity}, Características: {features}")
+                    
+                else:
+                    # Si falla Roboflow, mostrar el error y usar fallback
+                    error_text = response.text
+                    print(f"ERROR: Roboflow devolvió status {response.status_code}: {error_text}")
+                    # Usar el procesador local como fallback
+                    try:
+                        import sys
+                        sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
+                        from image_processor import determine_acne_severity
+                        severity = determine_acne_severity(image_path)
+                        analysis_result = f"Severidad: {severity} (análisis local - Roboflow falló)"
+                        print(f"DEBUG: Usando análisis local - Severidad: {severity}")
+                    except Exception as e:
+                        print(f"Error en análisis local: {e}")
+                        severity = "moderado"
+                        analysis_result = "No se pudo realizar un análisis detallado, pero se detectó actividad en la piel."
+            except requests.exceptions.RequestException as e:
+                print(f"ERROR: Excepción al llamar a Roboflow: {e}")
+                # Usar fallback
+                try:
+                    import sys
+                    sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
+                    from image_processor import determine_acne_severity
+                    severity = determine_acne_severity(image_path)
+                    analysis_result = f"Severidad: {severity} (análisis local - Error de conexión)"
+                except Exception as e2:
+                    print(f"Error en análisis local: {e2}")
+                    severity = "moderado"
+                    analysis_result = "No se pudo realizar un análisis detallado, pero se detectó actividad en la piel."
+        else:
+            # Si no hay configuración de Roboflow, usar procesador local
+            try:
+                import sys
+                sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
+                from image_processor import determine_acne_severity
+                severity = determine_acne_severity(image_path)
+                analysis_result = f"Severidad: {severity} (análisis local)"
+            except Exception as e:
+                print(f"Error en análisis local: {e}")
+                severity = "moderado"
+                analysis_result = "Análisis básico: se detectó actividad en la piel."
+                
+    except Exception as e:
+        print(f"Error al analizar imagen: {e}")
+        # Fallback a análisis básico
+        severity = "moderado"
+        analysis_result = "Hubo un problema al analizar la imagen, pero puedo ayudarte con recomendaciones generales."
 
-    # =============================================
+    # Construir descripción para mostrar
+    if detected_features:
+        description = f"Severidad: <strong>{severity}</strong><br>Características detectadas: {', '.join(detected_features)}"
+    else:
+        description = f"Severidad: <strong>{severity}</strong>"
 
     # Respuesta del bot con imagen + análisis real
     bot_html = f'''
@@ -604,4 +873,9 @@ def analyze_image(request):
     </div>
     '''
 
-    return JsonResponse({'html': bot_html})
+    return JsonResponse({
+        'html': bot_html,
+        'analysis_result': analysis_result,
+        'severity': severity,
+        'detected_features': detected_features
+    })
