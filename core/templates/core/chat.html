@@ -232,7 +232,6 @@
                         
                         // Si hay resultado de análisis, enviarlo a Voiceflow para recomendaciones
                         if (data.analysis_result) {
-                            showTypingIndicator();
                             
                             // Timeout para evitar que se quede colgado
                             const timeoutId = setTimeout(() => {
@@ -568,10 +567,45 @@
                         .replace(/\\u00da/g, 'Ú')
                         .replace(/\\'/g, "'")
                         .replace(/\\"/g, '"');
-                    messageDiv.textContent = cleanContent;
+                    
+                    const formatted = renderMarkdown(cleanContent);
+                    messageDiv.innerHTML = formatted;
                 }
                 chatMessages.appendChild(messageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function escapeHTML(text) {
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function renderMarkdown(text) {
+                let escaped = escapeHTML(text);
+                
+                // Resaltar títulos estilo Markdown (##, ###)
+                escaped = escaped.replace(/^###\s?(.*)$/gm, '<h4>$1</h4>');
+                escaped = escaped.replace(/^##\s?(.*)$/gm, '<h3>$1</h3>');
+                escaped = escaped.replace(/^#\s?(.*)$/gm, '<h2>$1</h2>');
+
+                // Negritas y cursivas
+                escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                escaped = escaped.replace(/__(.+?)__/g, '<strong>$1</strong>');
+                escaped = escaped.replace(/\*(.+?)\*/g, '<em>$1</em>');
+                escaped = escaped.replace(/_(.+?)_/g, '<em>$1</em>');
+
+                // Listas (líneas que comienzan con - o •)
+                escaped = escaped.replace(/(^|\n)\s*[-•]\s+(.*)/g, '$1&#8226; $2');
+
+                // Saltos de línea
+                escaped = escaped.replace(/\n{2,}/g, '<br><br>');
+                escaped = escaped.replace(/\n/g, '<br>');
+
+                return escaped;
             }
 
             function showTypingIndicator() {
