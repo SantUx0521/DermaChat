@@ -574,9 +574,6 @@ def analyze_image(request):
     image_url = fs.url(filename)
     image_path = fs.path(filename)
 
-    # =============================================
-    # ANÁLISIS CON ROBOFLOW
-    # =============================================
     from django.conf import settings
     import requests
     import os
@@ -592,13 +589,7 @@ def analyze_image(request):
         roboflow_version = getattr(settings, 'ROBOFLOW_VERSION', '1')
         
         if roboflow_api_key and roboflow_model_id:
-            # Construir la URL de la API de Roboflow
-            # Formato puede ser:
-            # - https://detect.roboflow.com/{workspace}/{project}/{version}?api_key={api_key}
-            # - https://detect.roboflow.com/{model_id}/{version}?api_key={api_key}
-            # Si model_id ya incluye workspace/project, no agregar version en la URL
             if '/' in roboflow_model_id:
-                # Ya incluye workspace/project
                 roboflow_url = f"https://detect.roboflow.com/{roboflow_model_id}?api_key={roboflow_api_key}"
             else:
                 # Solo model_id, agregar version
@@ -756,7 +747,6 @@ def analyze_image(request):
                     if severity_direct:
                         severity = str(severity_direct).lower()
                         if severity not in ['leve', 'moderado', 'grave', 'severo']:
-                            # Normalizar valores
                             if severity in ['mild', 'light', 'leve']:
                                 severity = "leve"
                             elif severity in ['moderate', 'moderado']:
@@ -767,7 +757,7 @@ def analyze_image(request):
                                 severity = "moderado"  # Default si no reconocemos el valor
                         print(f"DEBUG: Severidad directa del modelo: {severity}")
                     elif total_detections == 0:
-                        severity = "leve"  # Sin detecciones = leve
+                        severity = "leve"
                     elif total_detections < 5:
                         severity = "leve"
                     elif total_detections < 15:
@@ -813,8 +803,7 @@ def analyze_image(request):
                     try:
                         import sys
                         sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
-                        from image_processor import determine_acne_severity
-                        severity = determine_acne_severity(image_path)
+                        severity = determine(image_path)
                         analysis_result = f"Severidad: {severity} (análisis local - Roboflow falló)"
                         print(f"DEBUG: Usando análisis local - Severidad: {severity}")
                     except Exception as e:
@@ -827,8 +816,7 @@ def analyze_image(request):
                 try:
                     import sys
                     sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
-                    from image_processor import determine_acne_severity
-                    severity = determine_acne_severity(image_path)
+                    severity = determine(image_path)
                     analysis_result = f"Severidad: {severity} (análisis local - Error de conexión)"
                 except Exception as e2:
                     print(f"Error en análisis local: {e2}")
@@ -839,8 +827,7 @@ def analyze_image(request):
             try:
                 import sys
                 sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
-                from image_processor import determine_acne_severity
-                severity = determine_acne_severity(image_path)
+                severity = determine(image_path)
                 analysis_result = f"Severidad: {severity} (análisis local)"
             except Exception as e:
                 print(f"Error en análisis local: {e}")
@@ -849,17 +836,14 @@ def analyze_image(request):
                 
     except Exception as e:
         print(f"Error al analizar imagen: {e}")
-        # Fallback a análisis básico
         severity = "moderado"
         analysis_result = "Hubo un problema al analizar la imagen, pero puedo ayudarte con recomendaciones generales."
 
-    # Construir descripción para mostrar
     if detected_features:
         description = f"Severidad: <strong>{severity}</strong><br>Características detectadas: {', '.join(detected_features)}"
     else:
         description = f"Severidad: <strong>{severity}</strong>"
 
-    # Respuesta del bot con imagen + análisis real
     bot_html = f'''
     <div style="text-align:left; margin:15px 0;">
         <img src="{image_url}" style="max-width:280px; width:100%; border-radius:16px; 

@@ -7,10 +7,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             send_mail(
-                'Prueba de correo GMSearch',
+                'Prueba de correo DermaChat',
                 'Este es un correo de prueba para verificar la configuración de Gmail SMTP.',
                 'noreply@gmail.com',
-                ['alejand201@gmail.com'],  # Reemplazar con el correo que se quiera enviar la prueba
+                ['dermachat@gmail.com'], 
                 fail_silently=False,
             )
             self.stdout.write(self.style.SUCCESS('Correo enviado exitosamente'))
