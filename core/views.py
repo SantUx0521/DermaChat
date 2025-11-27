@@ -29,6 +29,10 @@ from rest_framework import status
 from django.shortcuts import render, redirect
 from django.core.files.storage import FileSystemStorage
 import mercadopago
+from rest_framework.decorators import api_view
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
 
 def index(request):
     usuario = request.user 
@@ -863,3 +867,82 @@ def analyze_image(request):
         'severity': severity,
         'detected_features': detected_features
     })
+
+# ============ Historial ==================
+def historial(request):
+    if not request.user.is_authenticated:
+        return redirect('login')  
+
+    usuario = request.user
+    conversaciones = Conversacion.objects.filter(usuario=usuario).order_by('-creada_en')
+    
+    # Si se proporciona un ID de conversación 
+    conversacion_id = request.GET.get('conversacion_id')
+    mensajes = None
+    conversacion_seleccionada = None
+    if conversacion_id:
+        conversacion_seleccionada = get_object_or_404(Conversacion, id=conversacion_id, usuario=usuario)
+        mensajes = Mensaje.objects.filter(conversacion=conversacion_seleccionada).order_by('creado_en')
+
+    context = {
+        'usuario': usuario,
+        'conversaciones': conversaciones,
+        'conversacion_seleccionada': conversacion_seleccionada,
+        'mensajes': mensajes,
+    }
+    return render(request, 'core/historial.html', context)
+
+# ============ guardar conversaciones ============
+
+@csrf_exempt  # ← Esto ahora SÍ funciona porque es una vista normal
+def guardar_mensaje(request):
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "No autenticado"}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    texto_usuario = data.get('mensaje_usuario', '').strip()
+    texto_bot = data.get('mensaje_bot', '').strip()
+    conversacion_id = data.get('conversacion_id')
+
+    # Crear o recuperar conversación
+    if conversacion_id:
+        try:
+            conversacion = Conversacion.objects.get(id=conversacion_id, usuario=request.user)
+        except Conversacion.DoesNotExist:
+            conversacion = Conversacion.objects.create(usuario=request.user, titulo="Nueva conversación")
+    else:
+        titulo = texto_usuario[:60] if texto_usuario else "Chat nuevo"
+        conversacion = Conversacion.objects.create(usuario=request.user, titulo=titulo)
+
+    # Guardar mensajes
+    if texto_usuario:
+        Mensaje.objects.create(conversacion=conversacion, remitente='usuario', contenido=texto_usuario)
+    if texto_bot:
+        Mensaje.objects.create(conversacion=conversacion, remitente='ia', contenido=texto_bot)
+
+    return JsonResponse({"conversacion_id": conversacion.id})
+
+# ============ recuperar las conversaciones para el chat============
+@api_view(['GET'])
+def obtener_mensajes_conversacion(request, conversacion_id):
+    if not request.user.is_authenticated:
+        return Response({"error": "No autenticado"}, status=401)
+    
+    try:
+        conversacion = Conversacion.objects.get(id=conversacion_id, usuario=request.user)
+        mensajes = conversacion.mensajes.all().order_by('creado_en')
+        data = [{
+            "remitente": msg.remitente,
+            "contenido": msg.contenido,
+            "hora": msg.creado_en.strftime("%H:%M")
+        } for msg in mensajes]
+        return Response(data)
+    except Conversacion.DoesNotExist:
+        return Response({"error": "Conversación no encontrada"}, status=404)
