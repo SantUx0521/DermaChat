@@ -34,6 +34,12 @@
                                 <i class="fas fa-user"></i>
                                 Ver perfil
                             </a>
+                                   <!-- link al historial -->
+                            <a href="{% url 'historial' %}" class="dropdown-item">
+                                <i class="fas fa-history"></i>
+                                 Historial de chats
+                            </a>
+
                             <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
                                 <i class="fas fa-sign-out-alt"></i>
                                     Cerrar sesión
@@ -80,7 +86,9 @@
             </div>
                             
             <form method="post" action="#" class="search-bar" id="chatForm" enctype="multipart/form-data">
+                {% csrf_token %}
                 <div class="searching">
+                    
                     <!-- Botón para subir imagen -->
                     <button type="button" class="upload-btn" id="uploadImageBtn">
                         <i class="fas fa-image"></i>
@@ -129,7 +137,7 @@
                     }
                 });
             }
-
+            const welcomeTitle = document.getElementById('welcome-title');
             // Configuración de Voiceflow
             const VF_API_KEY = '{{ voiceflow_api_key }}';
             console.log('VF_API_KEY desde template:', VF_API_KEY);
@@ -143,11 +151,16 @@
             let sessionInitialized = false;
 
             const chatForm = document.getElementById('chatForm');
+
+    
+       
+
+
             const messageInput = document.getElementById('messageInput');
             const chatContainer = document.getElementById('chatContainer');
             const chatMessages = document.getElementById('chatMessages');
             const logo = document.getElementById('logo');
-            const welcomeTitle = document.getElementById('welcome-title');
+         
 
             // Variables para manejo de imágenes
             const uploadImageBtn = document.getElementById('uploadImageBtn');
@@ -516,8 +529,20 @@
                     
                     if (!hasMessages) {
                         console.log('No se encontraron mensajes en la estructura esperada');
-                        addMessage('No recibí una respuesta válida del asistente.', 'bot');
+                        const fallbackMessage = 'No recibí una respuesta válida del asistente.';
+                        addMessage(fallbackMessage, 'bot');
+    
+                        // guarda el mensaje de error 
+                        guardarEnBaseDeDatos(message, fallbackMessage);
+                    } else {
+                        // guardar el último mensaje del bot
+                        const ultimoMensajeBot = document.querySelectorAll('#chatMessages .message.bot').length > 0
+                            ? document.querySelector('#chatMessages .message.bot:last-child').textContent || "Respuesta del asistente"
+                            : "Respuesta del asistente";
+                            
+                        guardarEnBaseDeDatos(message, ultimoMensajeBot);
                     }
+
                 } catch (error) {
                     hideTypingIndicator();
                     console.error('Error completo:', error);
@@ -535,6 +560,37 @@
             });
 
             // === FUNCIONES AUXILIARES ===
+            // === GUARDAR EN BASE DE DATOS ===
+            async function guardarEnBaseDeDatos(mensajeUsuario, mensajeBot) {
+                const csrfToken = getCSRFToken();  // ← Ya tienes esto
+
+                try {
+                    const response = await fetch('/api/guardar-mensaje/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken,  // ← ESTA LÍNEA RESUELVE EL 403
+                        },
+                        body: JSON.stringify({
+                            mensaje_usuario: mensajeUsuario,
+                            mensaje_bot: mensajeBot || "Sin respuesta",
+                            conversacion_id: localStorage.getItem('conversacion_actual') || null
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.conversacion_id) {
+                            localStorage.setItem('conversacion_actual', data.conversacion_id);
+                        }
+                    } else {
+                        console.error("Error en respuesta:", response.status);
+                    }
+                } catch (err) {
+                    console.log("Error al guardar:", err);
+                }
+            }
+
             function addMessage(content, sender) {
                 // Evitar mensajes vacíos o solo espacios
                 if (!content || (typeof content === 'string' && content.trim().length === 0)) {
@@ -683,5 +739,53 @@
 
 
 
+                   // === CARGAR CONVERSACIÓN DESDE HISTORIAL ===
+            const conversacionIdParaCargar = localStorage.getItem('cargar_conversacion_id');
+            if (conversacionIdParaCargar) {
+                const titulo = localStorage.getItem('cargar_conversacion_titulo') || "Conversación antigua";
+                
+                // Mostrar título de carga
+                welcomeTitle.textContent = `Cargando: ${titulo}...`;
+                welcomeTitle.style.display = 'block';
+                showChatInterface();
+
+                console.log(`Cargando conversación ID: ${conversacionIdParaCargar}`);
+
+                fetch(`/api/conversacion/${conversacionIdParaCargar}/mensajes/`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    }
+                })
+                .then(response => {
+                    console.log("Status:", response.status);
+                    if (!response.ok) throw new Error("Error " + response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos recibidos de la API:", data);  // Añadido para depuración
+                    const mensajes = Array.isArray(data) ? data : (data.mensajes || []);  // Maneja formatos comunes
+                    chatMessages.innerHTML = '';
+                    mensajes.forEach(msg => {
+                        const remitente = msg.remitente === 'usuario' ? 'user' : 'bot';
+                        addMessage(msg.contenido, remitente);
+                    });
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                    // GUARDAR ID para que nuevos mensajes sigan en esta conversación
+                    localStorage.setItem('conversacion_actual', conversacionIdParaCargar);
+                })
+                .catch(err => {
+                    console.error("Error cargando conversación:", err);
+                    addMessage("No se pudo cargar la conversación anterior.", 'bot');
+                })
+                .finally(() => {
+                    welcomeTitle.style.display = 'none';  // Siempre ocultar al final
+                    localStorage.removeItem('cargar_conversacion_id');
+                    localStorage.removeItem('cargar_conversacion_titulo');
+                });
+            } else {
+                welcomeTitle.textContent = "Bienvenido a DermaChat";
+            }    
         });
     </script>

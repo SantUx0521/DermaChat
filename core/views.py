@@ -29,6 +29,10 @@ from rest_framework import status
 from django.shortcuts import render, redirect
 from django.core.files.storage import FileSystemStorage
 import mercadopago
+from rest_framework.decorators import api_view
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
 
 def index(request):
     usuario = request.user 
@@ -574,9 +578,6 @@ def analyze_image(request):
     image_url = fs.url(filename)
     image_path = fs.path(filename)
 
-    # =============================================
-    # ANÁLISIS CON ROBOFLOW
-    # =============================================
     from django.conf import settings
     import requests
     import os
@@ -592,13 +593,7 @@ def analyze_image(request):
         roboflow_version = getattr(settings, 'ROBOFLOW_VERSION', '1')
         
         if roboflow_api_key and roboflow_model_id:
-            # Construir la URL de la API de Roboflow
-            # Formato puede ser:
-            # - https://detect.roboflow.com/{workspace}/{project}/{version}?api_key={api_key}
-            # - https://detect.roboflow.com/{model_id}/{version}?api_key={api_key}
-            # Si model_id ya incluye workspace/project, no agregar version en la URL
             if '/' in roboflow_model_id:
-                # Ya incluye workspace/project
                 roboflow_url = f"https://detect.roboflow.com/{roboflow_model_id}?api_key={roboflow_api_key}"
             else:
                 # Solo model_id, agregar version
@@ -756,7 +751,6 @@ def analyze_image(request):
                     if severity_direct:
                         severity = str(severity_direct).lower()
                         if severity not in ['leve', 'moderado', 'grave', 'severo']:
-                            # Normalizar valores
                             if severity in ['mild', 'light', 'leve']:
                                 severity = "leve"
                             elif severity in ['moderate', 'moderado']:
@@ -767,7 +761,7 @@ def analyze_image(request):
                                 severity = "moderado"  # Default si no reconocemos el valor
                         print(f"DEBUG: Severidad directa del modelo: {severity}")
                     elif total_detections == 0:
-                        severity = "leve"  # Sin detecciones = leve
+                        severity = "leve"
                     elif total_detections < 5:
                         severity = "leve"
                     elif total_detections < 15:
@@ -813,8 +807,7 @@ def analyze_image(request):
                     try:
                         import sys
                         sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
-                        from image_processor import determine_acne_severity
-                        severity = determine_acne_severity(image_path)
+                        severity = determine(image_path)
                         analysis_result = f"Severidad: {severity} (análisis local - Roboflow falló)"
                         print(f"DEBUG: Usando análisis local - Severidad: {severity}")
                     except Exception as e:
@@ -827,8 +820,7 @@ def analyze_image(request):
                 try:
                     import sys
                     sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
-                    from image_processor import determine_acne_severity
-                    severity = determine_acne_severity(image_path)
+                    severity = determine(image_path)
                     analysis_result = f"Severidad: {severity} (análisis local - Error de conexión)"
                 except Exception as e2:
                     print(f"Error en análisis local: {e2}")
@@ -839,8 +831,7 @@ def analyze_image(request):
             try:
                 import sys
                 sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
-                from image_processor import determine_acne_severity
-                severity = determine_acne_severity(image_path)
+                severity = determine(image_path)
                 analysis_result = f"Severidad: {severity} (análisis local)"
             except Exception as e:
                 print(f"Error en análisis local: {e}")
@@ -849,17 +840,14 @@ def analyze_image(request):
                 
     except Exception as e:
         print(f"Error al analizar imagen: {e}")
-        # Fallback a análisis básico
         severity = "moderado"
         analysis_result = "Hubo un problema al analizar la imagen, pero puedo ayudarte con recomendaciones generales."
 
-    # Construir descripción para mostrar
     if detected_features:
         description = f"Severidad: <strong>{severity}</strong><br>Características detectadas: {', '.join(detected_features)}"
     else:
         description = f"Severidad: <strong>{severity}</strong>"
 
-    # Respuesta del bot con imagen + análisis real
     bot_html = f'''
     <div style="text-align:left; margin:15px 0;">
         <img src="{image_url}" style="max-width:280px; width:100%; border-radius:16px; 
@@ -879,3 +867,82 @@ def analyze_image(request):
         'severity': severity,
         'detected_features': detected_features
     })
+
+# ============ Historial ==================
+def historial(request):
+    if not request.user.is_authenticated:
+        return redirect('login')  
+
+    usuario = request.user
+    conversaciones = Conversacion.objects.filter(usuario=usuario).order_by('-creada_en')
+    
+    # Si se proporciona un ID de conversación 
+    conversacion_id = request.GET.get('conversacion_id')
+    mensajes = None
+    conversacion_seleccionada = None
+    if conversacion_id:
+        conversacion_seleccionada = get_object_or_404(Conversacion, id=conversacion_id, usuario=usuario)
+        mensajes = Mensaje.objects.filter(conversacion=conversacion_seleccionada).order_by('creado_en')
+
+    context = {
+        'usuario': usuario,
+        'conversaciones': conversaciones,
+        'conversacion_seleccionada': conversacion_seleccionada,
+        'mensajes': mensajes,
+    }
+    return render(request, 'core/historial.html', context)
+
+# ============ guardar conversaciones ============
+
+@csrf_exempt  # ← Esto ahora SÍ funciona porque es una vista normal
+def guardar_mensaje(request):
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "No autenticado"}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    texto_usuario = data.get('mensaje_usuario', '').strip()
+    texto_bot = data.get('mensaje_bot', '').strip()
+    conversacion_id = data.get('conversacion_id')
+
+    # Crear o recuperar conversación
+    if conversacion_id:
+        try:
+            conversacion = Conversacion.objects.get(id=conversacion_id, usuario=request.user)
+        except Conversacion.DoesNotExist:
+            conversacion = Conversacion.objects.create(usuario=request.user, titulo="Nueva conversación")
+    else:
+        titulo = texto_usuario[:60] if texto_usuario else "Chat nuevo"
+        conversacion = Conversacion.objects.create(usuario=request.user, titulo=titulo)
+
+    # Guardar mensajes
+    if texto_usuario:
+        Mensaje.objects.create(conversacion=conversacion, remitente='usuario', contenido=texto_usuario)
+    if texto_bot:
+        Mensaje.objects.create(conversacion=conversacion, remitente='ia', contenido=texto_bot)
+
+    return JsonResponse({"conversacion_id": conversacion.id})
+
+# ============ recuperar las conversaciones para el chat============
+@api_view(['GET'])
+def obtener_mensajes_conversacion(request, conversacion_id):
+    if not request.user.is_authenticated:
+        return Response({"error": "No autenticado"}, status=401)
+    
+    try:
+        conversacion = Conversacion.objects.get(id=conversacion_id, usuario=request.user)
+        mensajes = conversacion.mensajes.all().order_by('creado_en')
+        data = [{
+            "remitente": msg.remitente,
+            "contenido": msg.contenido,
+            "hora": msg.creado_en.strftime("%H:%M")
+        } for msg in mensajes]
+        return Response(data)
+    except Conversacion.DoesNotExist:
+        return Response({"error": "Conversación no encontrada"}, status=404)
