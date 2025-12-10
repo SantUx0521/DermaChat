@@ -121,6 +121,10 @@ body.fade-out {
   color: #00B4D8;
 }
 @media screen and (max-width: 750px) {
+  html {
+        font-size: 8px;
+    }
+
   .main .center .search {
     width: 500px;
   }
