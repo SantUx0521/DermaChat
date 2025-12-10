@@ -42,5 +42,8 @@ urlpatterns = [
     path('api/login/', LoginView.as_view(), name='api_login'),
     path('api/', include(router.urls)),
     path('api/analyze_image/', views.analyze_image, name='analyze_image'),
+    path('api/conversacion/<int:conversacion_id>/mensajes/', views.obtener_mensajes_conversacion, name='obtener_mensajes'),
+    path('historial/', views.historial, name='historial'),
+    path('api/guardar-mensaje/', views.guardar_mensaje, name='guardar_mensaje'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
