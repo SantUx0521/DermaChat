@@ -95,16 +95,39 @@ body {
     cursor: pointer;
 }
 
-.account-avatar{
-    width: 28px;
-    height: 28px;
+/* Contenedor del avatar (el div) */
+.account-avatar {
+    width: 36px;           /* un poco más grande que 28px para que se vea bien */
+    height: 36px;
     border-radius: 50%;
-    object-fit: cover;
+    overflow: hidden;         /* ¡¡IMPORTANTÍSIMO!! recorta la imagen */
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+    background: #1976d2;      /* color de fondo por si falla la imagen */
 }
 
-.account-avatar i {
-    font-size: 1.8rem;
+/* La imagen en sí */
+.account-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;        /* evita que se deforme */
+    display: block;
 }
+
+/* Cuando no hay foto y aparece el icono */
+.account-avatar i {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.8rem;
+    background: #1976d2;
+    border-radius: 50%;
+}
+
 
 .dropdown-menu {
     display: none;
