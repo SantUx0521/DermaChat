@@ -6,7 +6,7 @@ El sistema está diseñado bajo una **arquitectura cliente-servidor**, donde el 
 
 ---
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 
 - [Descripción del Proyecto](#-descripción-del-proyecto)
 - [Características Principales](#-características-principales)
@@ -23,59 +23,60 @@ El sistema está diseñado bajo una **arquitectura cliente-servidor**, donde el 
 
 ---
 
-## 🎯 Descripción del Proyecto
+## Descripción del Proyecto
 
 DermaChat permite a los usuarios:
 
-- ✅ Crear una cuenta y acceder a su perfil personalizado
-- ✅ Enviar mensajes y dudas sobre su piel mediante un chat interactivo
-- ✅ Subir imágenes que son analizadas por un modelo de **IA dermatológica**
-- ✅ Recibir sugerencias personalizadas y recomendaciones informativas basadas en el análisis
-- ✅ Consultar información médica verificada de fuentes reconocidas
-- ✅ Gestionar múltiples conversaciones con historial completo
-- ✅ Acceder a planes premium con funcionalidades adicionales
-- ✅ Recuperar contraseña mediante verificación por email
-- ✅ Verificar cuenta mediante enlace de confirmación
+- Crear una cuenta y acceder a su perfil personalizado
+- Enviar mensajes y dudas sobre su piel mediante un chat interactivo
+- Subir imágenes que son analizadas por un modelo de **IA dermatológica**
+- Recibir sugerencias personalizadas y recomendaciones informativas basadas en el análisis
+- Consultar información médica verificada de fuentes reconocidas
+- Gestionar múltiples conversaciones con historial completo
+- Acceder a planes premium con funcionalidades adicionales
+- Recuperar contraseña mediante verificación por email
+- Verificar cuenta mediante enlace de confirmación
 
 El objetivo principal es **brindar orientación previa** a la consulta con un dermatólogo, ayudando a identificar posibles tipos de acné o afecciones comunes, **sin reemplazar la opinión profesional**.
 
 ---
 
-## ✨ Características Principales
+## Características Principales
 
-### 🔐 Autenticación y Seguridad
+### Autenticación y Seguridad
 - Sistema de autenticación personalizado con modelo de usuario extendido
 - Verificación de email obligatoria para activar cuenta
 - Recuperación de contraseña mediante tokens seguros
 - Protección CSRF en todas las peticiones
 - Sesiones seguras con Django
 
-### 💬 Chat con IA
-- Integración con **VoiceFlow** para conversaciones inteligentes
-- Análisis de imágenes en tiempo real con **Roboflow**
+### Chat con IA
+- Integración con `VoiceFlow` para conversaciones inteligentes
+- Análisis de imágenes en tiempo real con `RoboFlow`
 - Historial completo de conversaciones
 - Interfaz de chat moderna y responsiva
 - Soporte para envío de imágenes y texto
 
-### 🖼️ Análisis de Imágenes
+### Análisis de Imágenes
 - Detección automática de severidad del acné (leve, moderado, severo)
 - Identificación de características específicas en las lesiones
 - Integración con modelo de IA especializado en dermatología
 - Procesamiento de imágenes con OpenCV y PIL
 
-### 💳 Sistema de Pagos
+### Sistema de Pagos
 - Integración con **Mercado Pago** para planes premium
-- Gestión de suscripciones y pagos
+- Integracion con **PayPal** a través de la API de pagos
+- Gestión de pagos
 - Páginas de confirmación de pago (éxito, fallo, pendiente)
 
-### 📧 Notificaciones por Email
+### Notificaciones por Email
 - Envío de emails de verificación de cuenta
 - Recuperación de contraseña por email
 - Configuración SMTP con Gmail
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 DermaChat/
@@ -120,21 +121,25 @@ DermaChat/
 
 ---
 
-## 🔧 Requisitos Previos
+## Requisitos Previos
 
-Antes de comenzar, asegúrate de tener instalado:
+### Como usuario
+No necesitas tener nada instalado, solo acceder a través del navegador web a DermaChat.
+
+### Como developer
+Se debe de tener instalado:
 
 - **Python 3.11 o superior**
 - **pip** (gestor de paquetes de Python)
 - **Git** (para clonar el repositorio)
-- Una cuenta en **VoiceFlow** (para la API de chat)
-- Una cuenta en **Roboflow** (para análisis de imágenes)
-- Una cuenta en **Mercado Pago** (para pagos, opcional)
-- Una cuenta de **Gmail** con contraseña de aplicación (para envío de emails)
-
+- `.env` con las llaves secretas (API) de:
+  - gmail
+  - mercadopago
+  - RoboFlow
+  - VoiceFlow
 ---
 
-## ⚙️ Configuración del Entorno
+## Configuración del Entorno
 
 ### 1. Clonar el Repositorio
 
@@ -163,14 +168,13 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 Instalación y Ejecución
+## Instalación y Ejecución
 
 ### Pasos para ejecutar el proyecto localmente:
 
 ```bash
 # 1. Activar el entorno virtual (si no está activado)
 venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
 
 # 2. Instalar dependencias
 pip install -r requirements.txt
@@ -182,9 +186,6 @@ pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
 
-# 5. Crear superusuario (opcional, para acceder al admin)
-python manage.py createsuperuser
-
 # 6. Ejecutar servidor de desarrollo
 python manage.py runserver
 ```
@@ -193,7 +194,7 @@ El servidor estará disponible en: `http://127.0.0.1:8000/`
 
 ---
 
-## 🔐 Configuración de Variables de Entorno
+## Configuración de Variables de Entorno
 
 Crea un archivo `.env` en la raíz del proyecto con las siguientes variables:
 
@@ -217,7 +218,7 @@ MERCADOPAGO_ACCESS_TOKEN=tu_access_token_de_mercadopago
 SECRET_KEY=tu_secret_key_segura
 ```
 
-### 📝 Notas sobre las Variables de Entorno:
+### Notas sobre las Variables de Entorno:
 
 - **VOICEFLOW_API_KEY**: Obtén tu API key desde el dashboard de VoiceFlow
 - **ROBOFLOW_API_KEY**: Disponible en tu cuenta de Roboflow
@@ -227,7 +228,7 @@ SECRET_KEY=tu_secret_key_segura
 
 ---
 
-## 🌐 API Endpoints
+## API Endpoints
 
 ### Endpoints de Autenticación
 
@@ -292,7 +293,7 @@ SECRET_KEY=tu_secret_key_segura
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 ### Backend
 - **Python 3.11+** - Lenguaje de programación
@@ -326,9 +327,7 @@ SECRET_KEY=tu_secret_key_segura
 
 ---
 
-## 🏗️ Arquitectura del Sistema
-
-### Modelos de Datos
+## Modelos de Datos
 
 #### Usuario
 - Email (único)
@@ -370,7 +369,7 @@ SECRET_KEY=tu_secret_key_segura
 
 ---
 
-## 👥 Autores
+## Autores
 
 - **Alejandro Garzón**
 - **Santiago Useche**
@@ -380,42 +379,16 @@ SECRET_KEY=tu_secret_key_segura
 
 ## ⚠️ Consideraciones Importantes
 
-### ⚕️ Uso Médico
+### Uso Médico
 - **DermaChat NO reemplaza la consulta médica profesional**
 - Los análisis y recomendaciones ofrecidos son **orientativos** y tienen **fines educativos**
-- Siempre consulta con un dermatólogo certificado para diagnósticos y tratamientos
+- Siempre consulta con un dermatólogo certificado para diagnósticos y tratamientos, de igual forma, DermaChat nuncá te dara diagnosticos definitivos y siempre recomendara consulta profesional.
 
-### 🔒 Seguridad
-- **NO** compartas tu archivo `.env` en el repositorio
-- Usa contraseñas seguras para producción
-- Cambia el `SECRET_KEY` de Django en producción
-- Configura `DEBUG = False` en producción
-- Configura `ALLOWED_HOSTS` apropiadamente para producción
-
-### 🚀 Producción
-- Considera usar PostgreSQL en lugar de SQLite para producción
-- Configura servidor web (Nginx + Gunicorn) para producción
-- Implementa HTTPS con certificado SSL
-- Configura backups regulares de la base de datos
-- Monitorea el uso de las APIs externas (límites de uso)
-
-### 📊 Límites de API
-- VoiceFlow tiene límites de uso según tu plan
-- Roboflow tiene límites de inferencias según tu plan
-- Mercado Pago tiene límites según tu cuenta
+### Límites de API
+- VoiceFlow tiene límites de uso
+- Roboflow tiene límites de inferencias
+- Mercado Pago tiene límites
 
 ---
 
-## 📞 Soporte
-
-Para reportar problemas o sugerencias, por favor abre un issue en el repositorio del proyecto.
-
----
-
-## 📄 Licencia
-
-Este proyecto es de uso educativo. Consulta con los autores para más información sobre la licencia.
-
----
-
-**Última actualización**: 2025
+**Última actualización**: 12/2025
