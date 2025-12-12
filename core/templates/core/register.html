@@ -20,10 +20,8 @@
             <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> {{ error }}
         </p>
         {% endif %}
-        <p id="password_error" role="alert" aria-live="assertive" style="color: red; display: none;">
-            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Las contraseñas no coinciden
-        </p>
-        <form method="post" action="{% url 'register' %}" id="registerForm">
+        <div id="validation_errors" role="alert" aria-live="assertive" style="display: none;"></div>
+        <form method="post" action="{% url 'register' %}" id="registerForm" novalidate>
           {% csrf_token %}
           <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
           <input type="hidden" name="tipo_usuario" value="cliente">
@@ -47,7 +45,6 @@
               <label for="confirm_password">Confirmar contraseña</label>
               <span></span>
           </div>
-          <p id="password_error" style="color: red; display: none;">Las contraseñas no coinciden</p>
           <input type="submit" value="Registrarse">
           <div class="iniciar">
               ¿Ya se registró?<a href="{% url 'login' %}">Iniciar sesión</a>
@@ -63,16 +60,52 @@
   </div>
 
   <script>
+    // Prevenir tooltips nativos del navegador
+    document.querySelectorAll('#registerForm input[required]').forEach(function(input) {
+      input.addEventListener('invalid', function(e) {
+        e.preventDefault();
+      });
+    });
+
     document.getElementById('registerForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const nombre = document.getElementById('id_nombre').value.trim();
+      const email = document.getElementById('id_email').value.trim();
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirm_password').value;
-      const errorElement = document.getElementById('password_error');
-
-      if (password !== confirmPassword) {
-        e.preventDefault();
-        errorElement.style.display = 'block';
+      const errorContainer = document.getElementById('validation_errors');
+      
+      let errors = [];
+      
+      if (!nombre) {
+        errors.push('El nombre de usuario es requerido');
+      }
+      
+      if (!email) {
+        errors.push('El correo electrónico es requerido');
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push('El correo electrónico debe ser válido');
+      }
+      
+      if (!password) {
+        errors.push('La contraseña es requerida');
+      }
+      
+      if (!confirmPassword) {
+        errors.push('La confirmación de contraseña es requerida');
+      }
+      
+      if (password && confirmPassword && password !== confirmPassword) {
+        errors.push('Las contraseñas no coinciden');
+      }
+      
+      if (errors.length > 0) {
+        errorContainer.innerHTML = '<p style="color: red; text-align: center; margin: 10px 0;"><i class="fas fa-exclamation-triangle"></i> ' + errors.join(' | ') + '</p>';
+        errorContainer.style.display = 'block';
       } else {
-        errorElement.style.display = 'none';
+        errorContainer.style.display = 'none';
+        this.submit();
       }
     });
   </script>
