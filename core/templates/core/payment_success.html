@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Pago exitoso</title>
+  <link rel="stylesheet" href="{% static 'core/css/contact_sent.css' %}">
+</head>
+
+<body>
+  <div class="main">
+    <div class="center">
+        <h1>Tu pago ha sido realizado con exito!</h1>
+        <p>Disfruta de tus beneficios premium en nuestra aplicación.</p>
+        <button onclick="window.location.href='{% url 'index' %}'" class="btn">
+        Volver al inicio
+        </button>
+    </div>
+  </div>
+</body>
+</html>

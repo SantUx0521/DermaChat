@@ -1,0 +1,210 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opciones de Pago - DermaChat Premium</title>
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'core/css/payment_options.css' %}">
+</head>
+<body class="fade-in">
+    <div class="top">
+        <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
+            <i class="fas fa-home"></i>
+        </a>
+        <div class="nav" id="nav">
+            <div class="signup">
+                {% if user.is_authenticated %}
+                <div class="account-dropdown">
+                    <button class="account-btn" id="accountBtn">
+                        <div class="profile-name">{{ usuario.nombre }}</div>
+                        <div class="account-avatar">
+                            {% if user.foto_perfil %}
+                                <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil de {{ usuario.nombre }}">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <a href="{% url 'profile' %}" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Ver perfil
+                        </a>
+                        <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                                Cerrar sesión
+                        </a>
+                    </div>
+                    <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
+                        {% csrf_token %}    
+                    </form>
+                </div>
+                {% else %}
+                <ul>
+                    <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
+                    <li><a href="{% url 'register' %}">Registrarse</a></li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="payment-container">
+        <div class="payment-header">
+            <h1><i class="fas fa-crown"></i> Plan Premium</h1>
+            <p class="subtitle">Activa tu plan premium ahora</p>
+        </div>
+
+        <div class="payment-content-simple">
+            <div class="benefits-list">
+                <h2>Beneficios incluidos:</h2>
+                <ul>
+                    {% for benefit in premium_benefits %}
+                    <li><i class="fas fa-check"></i> {{ benefit }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="payment-form-simple">
+                <div class="price-section">
+                        <div class="price-display">
+                            <span class="amount">$39.900 COP</span>
+                            <span class="period">/mes</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="payment_method">Método de Pago</label>
+                        <select id="payment_method" name="payment_method" class="form-control">
+                            <option value="card">Tarjeta de Crédito/Débito</option>
+                            <option value="paypal">PayPal</option>
+                        </select>
+                    </div>
+
+                <div id="card_fields" style="display: block;"> 
+                    <form method="POST" action="{% url 'payment_options' %}" class="simple-form">
+                        {% csrf_token %}
+
+                        <div class="form-group">
+                            <label for="card_number">Número de Tarjeta</label>
+                            <input type="text" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19" class="form-control">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="expiry_date">Vencimiento</label>
+                                <input type="text" id="expiry_date" name="expiry_date" placeholder="MM/AA" maxlength="5" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="cvv">CVV</label>
+                                <input type="text" id="cvv" name="cvv" placeholder="123" maxlength="3" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cardholder_name">Nombre del Titular</label>
+                            <input type="text" id="cardholder_name" name="cardholder_name" placeholder="Nombre completo" class="form-control">
+                        </div>
+
+                        <input type="hidden" name="payment_plan" value="monthly">
+                        
+                        <button type="submit" class="submit-button">
+                            <i class="fas fa-lock"></i>
+                            Activar Premium
+                        </button>
+                        <p class="security-note">
+                            <i class="fas fa-shield-alt"></i>
+                            Pago seguro y encriptado
+                        </p>
+                    </form>
+                </div>
+                <div id="paypal_fields" class="paypal" style="display: flex;">
+                    <style>.pp-74RX36FJ4XAA2{text-align:center;border:none;border-radius:1.25rem;min-width:17.625rem;padding:0 2rem;height:3.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
+                    <form action="https://www.paypal.com/ncp/payment/74RX36FJ4XAA2" method="post" target="_blank" style="display:inline-grid;justify-items:center;align-content:start;gap:1.5rem;">
+                        <input class="pp-74RX36FJ4XAA2" type="submit" value="Comprar ahora" />
+                        <img src=https://www.paypalobjects.com/images/Debit_Credit_APM.svg alt="cards" style="height:1.875rem;vertical-align:middle;"/>
+                        <section style="font-size: 0.75rem;"> Con la tecnología de <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'core/js/main.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const accountBtn = document.getElementById('accountBtn');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            if (accountBtn && dropdownMenu) {
+                accountBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('show');
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!accountBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+
+            // Formatear número de tarjeta
+            const cardNumber = document.getElementById('card_number');
+            if (cardNumber) {
+                cardNumber.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\s/g, '');
+                    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+                    e.target.value = formattedValue;
+                });
+            }
+
+            // Formatear fecha de vencimiento
+            const expiryDate = document.getElementById('expiry_date');
+            if (expiryDate) {
+                expiryDate.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length >= 2) {
+                        value = value.substring(0, 2) + '/' + value.substring(2, 4);
+                    }
+                    e.target.value = value;
+                });
+            }
+        });
+    </script>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const selector = document.getElementById("payment_method");
+        const cardFields = document.getElementById("card_fields");
+        const paypalFields = document.getElementById("paypal_fields");
+
+        function updateVisibility() {
+            if (selector.value === "card") {
+                cardFields.style.display = "block";
+                paypalFields.style.display = "none";
+            } else {
+                cardFields.style.display = "none";
+                paypalFields.style.display = "flex";
+            }
+        }
+
+        selector.addEventListener("change", updateVisibility);
+        updateVisibility();
+    });
+    </script>
+    
+    <script>
+    document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      window.location.href = "{% url 'select_plan' %}";
+         }
+     });
+    </script>
+
+</body>
+</html>
+

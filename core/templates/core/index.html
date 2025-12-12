@@ -10,50 +10,50 @@
     <link rel="stylesheet" href="{% static 'core/css/materialize.css' %}">
 </head>
 <body>
-    <main class="main">
-        <div class="top">
-            <div class="logo">
-                <div class="logo-img"></div>
-            </div>
-            
-            <div class="nav" id="nav">
-                <div class="signup">
-                    {% if user.is_authenticated %}
-                    <div class="account-dropdown">
-                        <button class="account-btn" id="accountBtn">
-                            <div class="profile-name">{{ usuario.nombre }}</div>
-                            <div class="account-avatar">
-                                {% if user.foto_perfil %}
-                                    <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil">
-                                {% else %}
-                                    <i class="fas fa-user"></i>
-                                {% endif %}
-                            </div>
-                        </button>
-                        <div class="dropdown-menu" id="dropdownMenu">
-                            <a href="{% url 'profile' %}" class="dropdown-item">
-                                <i class="fas fa-user"></i>
-                                Ver perfil
-                            </a>
-                            <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
-                                <i class="fas fa-sign-out-alt"></i>
-                                    Cerrar sesión
-                            </a>
-                        </div>
-                        <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
-                            {% csrf_token %}    
-                        </form>
-                    </div>
-                    {% else %}
-                    <ul>
-                        <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
-                        <li><a href="{% url 'register' %}">Registrarse</a></li>
-                    </ul>
-                    {% endif %}
-                </div>
-            </div>
+    <header class="top" role="banner">
+        <div class="logo">
+            <div class="logo-img"></div>
         </div>
+        
+        <nav class="nav custom-nav" id="nav" role="navigation">
+            <div class="signup">
+                {% if user.is_authenticated %}
+                <div class="account-dropdown">
+                    <button class="account-btn" id="accountBtn" aria-expanded="false">
+                        <div class="profile-name">{{ usuario.nombre }}</div>
+                        <div class="account-avatar">
+                            {% if user.foto_perfil %}
+                                <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil de {{ usuario.nombre }}">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <a href="{% url 'profile' %}" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Ver perfil
+                        </a>
+                        <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                                Cerrar sesión
+                        </a>
+                    </div>
+                    <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
+                        {% csrf_token %}    
+                    </form>
+                </div>
+                {% else %}
+                <ul>
+                    <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
+                    <li><a href="{% url 'register' %}">Registrarse</a></li>
+                </ul>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
 
+    <main class="main" role="main">
         <div class="center">
             <div>
                 <h1 class="h1">Derma Chat</h1>
@@ -98,28 +98,28 @@
         </div>
     </main>
     
-        <footer class="page-footer light-blue darken-3">
-          <div class="container">
+    <footer class="page-footer light-blue darken-4" role="contentinfo">
+        <div class="container">
             <div class="row">
-              <div class="col l6 s12">
-                <h5 class="white-text">DermaChat</h5>
-                <p class="grey-text text-lighten-4">Resolvemos dudas sobre tu acne.</p>
-              </div>
-              <div class="col l4 offset-l2 s12">
-                <h5 class="white-text">Links</h5>
-                <ul>
-                  <li><a class="grey-text text-lighten-3" href="{% url 'chat' %}">Chat</a></li>
-                  <a class="grey-text text-lighten-3" href="{% url 'contact' %}">Contactanos</a>
-                </ul>
-              </div>
+                <div class="col l6 s12">
+                    <h1 class="white-text">DermaChat</h1>
+                    <p class="grey-text text-lighten-4">Resolvemos dudas sobre tu acne.</p>
+                </div>
+                <div class="col l4 offset-l2 s12">
+                    <h2 class="white-text">Links</h2>
+                    <ul>
+                        <li><a class="grey-text text-lighten-3" href="{% url 'chat' %}">Chat</a></li>
+                        <li><a class="grey-text text-lighten-3" href="{% url 'contact' %}">Contactanos</a></li>
+                    </ul>
+                </div>
             </div>
-          </div>
-          <div class="footer-copyright">
+        </div>
+        <div class="footer-copyright">
             <div class="container">
             © 2025 Todos los derechos reservados.
             </div>
-          </div>
-        </footer>
+        </div>
+    </footer>
 
     <script src="{% static 'core/js/main.js' %}"></script>
     <script>
@@ -130,12 +130,14 @@
             if (accountBtn && dropdownMenu) {
                 accountBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    dropdownMenu.classList.toggle('show');
+                    const isExpanded = dropdownMenu.classList.toggle('show');
+                    accountBtn.setAttribute('aria-expanded', isExpanded);
                 });
 
                 document.addEventListener('click', function(e) {
                     if (!accountBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
                         dropdownMenu.classList.remove('show');
+                        accountBtn.setAttribute('aria-expanded', 'false');
                     }
                 });
             }

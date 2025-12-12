@@ -111,6 +111,44 @@ body.fade-in {
     font-weight: 500;
 }
 
+.plan-item {
+    border-left-color: #01BAEF;
+}
+
+.plan-value {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.plan-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.premium-badge {
+    background: linear-gradient(135deg, #01BAEF 0%, #0685AE 100%);
+    color: #0B4F6C;
+    box-shadow: 0 2px 8px rgba(1, 186, 239, 0.3);
+}
+
+.free-badge {
+    background: #0685AE;
+    color: #FBFBFF;
+    box-shadow: 0 2px 8px rgba(6, 133, 174, 0.3);
+}
+
+.plan-badge i {
+    font-size: 1.1rem;
+}
+
 .profile-actions {
     display: flex;
     gap: 15px;
@@ -195,7 +233,7 @@ body.fade-in {
     .home-icon {
         top: 15px;
         left: 15px;
-        font-size: 20px;
+        font-size: 50px;
     }
     
     .profile-actions {

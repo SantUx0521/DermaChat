@@ -2,6 +2,7 @@ from itertools import count
 import json
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from rest_framework import viewsets, permissions, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -26,6 +27,13 @@ from rest_framework.exceptions import PermissionDenied
 from .models import  Conversacion, Mensaje ,Usuario
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from django.shortcuts import render, redirect
+from django.core.files.storage import FileSystemStorage
+import mercadopago
+from rest_framework.decorators import api_view
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
 
 def index(request):
     usuario = request.user 
@@ -96,7 +104,8 @@ def register_page(request):
             password=make_password(password),
         )
         login(request, usuario)
-        return render(request, 'core/index.html')
+        # Redirigir a selección de plan después del registro
+        return redirect('select_plan')
     return render(request, 'core/register.html')
 
 def login_usuario(request):
@@ -443,3 +452,507 @@ def contacto(request):
 
 def contacto_enviado(request):
     return render(request, 'core/contact_sent.html')
+
+def select_plan(request):
+    """Vista para seleccionar plan (Gratuito o Premium) después del registro o cambiar de plan"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    if request.method == 'POST':
+        plan_choice = request.POST.get('plan')
+        usuario = request.user
+        
+        if plan_choice == 'premium':
+            # Si ya es premium, solo redirigir a index
+            if usuario.es_premium:
+                return redirect('profile')
+            # Redirigir a opciones de pago
+            return redirect('payment_options')
+        elif plan_choice == 'free':
+            # Usuario elige plan gratuito
+            if usuario.es_premium:
+                # Si tenía premium, cambiar a gratuito
+                usuario.es_premium = False
+                usuario.save()
+            # Continuar al index
+            return redirect('profile')
+    
+    usuario = request.user
+    return render(request, 'core/select_plan.html', {'usuario': usuario})
+
+def select_plan(request):
+    """Vista para seleccionar plan (Gratuito o Premium) después del registro o cambiar de plan"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    if request.method == 'POST':
+        plan_choice = request.POST.get('plan')
+        usuario = request.user
+
+        if plan_choice == 'premium':
+            if usuario.es_premium:
+                return redirect('profile')
+            return redirect('payment_options')
+        elif plan_choice == 'free':
+            if usuario.es_premium:
+                usuario.es_premium = False
+                usuario.save()
+
+            return redirect('profile')
+    
+    usuario = request.user
+    return render(request, 'core/select_plan.html', {'usuario': usuario})
+
+def payment_options(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    usuario = request.user
+
+    if request.method == 'POST':
+        payment_plan = request.POST.get('payment_plan')
+
+        if payment_plan:
+            sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+
+            success_url = request.build_absolute_uri(reverse("payment_success"))
+            failure_url = request.build_absolute_uri(reverse("payment_failure"))
+            pending_url = request.build_absolute_uri(reverse("payment_pending"))
+
+            preference_data = {
+                "items": [
+                    {
+                        "title": "Suscripción Premium DermaChat",
+                        "quantity": 1,
+                        "currency_id": "COP",
+                        "unit_price": 1,
+                    }
+                ],
+                "payer": {
+                    "email": usuario.email,
+                },
+                "back_urls": {
+                    "success": success_url,
+                    "failure": failure_url,
+                    "pending": pending_url,
+                },
+                "auto_return": "approved",
+            }
+
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+
+            init_point = preference.get("init_point") or preference.get("sandbox_init_point")
+            if not init_point:
+                print("⚠️ Mercado Pago no devolvió URL de pago:", preference)
+                return JsonResponse({"error": "Mercado Pago no devolvio URL de pago"}, status=500)
+
+            return redirect(init_point)
+
+    context = {
+        "usuario": usuario,
+        "premium_benefits": [
+            "Análisis ilimitado de imágenes",
+            "Prioridad en el análisis",
+            "Acceso a reportes detallados",
+            "Soporte prioritario",
+            "Sin límites de uso diario",
+            "Historial completo de análisis",
+        ],
+    }
+    return render(request, "core/payment_options.html", context)
+
+def payment_success(request):
+    user = request.user
+    if user.is_authenticated:
+        user.es_premium = True
+        user.save()
+    return render(request, 'core/payment_success.html')
+
+def payment_failure(request):
+    return render(request, 'core/payment_failure.html')
+
+def payment_pending(request):
+    return render(request, 'core/payment_pending.html')
+
+def analyze_image(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'No autenticado'}, status=401)
+
+    if request.method != 'POST' or 'image' not in request.FILES:
+        return JsonResponse({'error': 'No se recibió imagen'}, status=400)
+
+    image_file = request.FILES['image']
+    fs = FileSystemStorage()
+    filename = fs.save(image_file.name, image_file)
+    image_url = fs.url(filename)
+    image_path = fs.path(filename)
+
+    from django.conf import settings
+    import requests
+    import os
+    
+    analysis_result = None
+    severity = None
+    detected_features = []
+    
+    try:
+        # Llamar a la API de Roboflow
+        roboflow_api_key = getattr(settings, 'ROBOFLOW_API_KEY', '')
+        roboflow_model_id = getattr(settings, 'ROBOFLOW_MODEL_ID', '')
+        roboflow_version = getattr(settings, 'ROBOFLOW_VERSION', '1')
+        
+        if roboflow_api_key and roboflow_model_id:
+            if '/' in roboflow_model_id:
+                roboflow_url = f"https://detect.roboflow.com/{roboflow_model_id}?api_key={roboflow_api_key}"
+            else:
+                # Solo model_id, agregar version
+                roboflow_url = f"https://detect.roboflow.com/{roboflow_model_id}/{roboflow_version}?api_key={roboflow_api_key}"
+            
+            print(f"DEBUG: Llamando a Roboflow")
+            print(f"DEBUG: URL: {roboflow_url}")
+            print(f"DEBUG: Model ID: {roboflow_model_id}")
+            print(f"DEBUG: Version: {roboflow_version}")
+            print(f"DEBUG: API Key (primeros 10 chars): {roboflow_api_key[:10]}...")
+            print(f"DEBUG: Ruta de imagen: {image_path}")
+            print(f"DEBUG: Tamaño de imagen: {os.path.getsize(image_path)} bytes")
+            
+            # Enviar la imagen a Roboflow
+            # Roboflow acepta imágenes como base64 o como archivo
+            try:
+                import base64
+                
+                # Leer la imagen y codificarla en base64
+                with open(image_path, 'rb') as img_file:
+                    img_data = base64.b64encode(img_file.read()).decode('utf-8')
+                
+                # Roboflow acepta base64 en el body
+                # La URL ya incluye api_key como parámetro
+                response = requests.post(
+                    roboflow_url,
+                    data=img_data,
+                    headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                    timeout=30
+                )
+                
+                # Si falla con base64, intentar con file upload (sin api_key en params porque ya está en URL)
+                if response.status_code != 200:
+                    print(f"DEBUG: Intento con base64 falló ({response.status_code}): {response.text[:200]}")
+                    print(f"DEBUG: Intentando con file upload...")
+                    with open(image_path, 'rb') as img_file:
+                        files = {'file': (os.path.basename(image_path), img_file, 'image/jpeg')}
+                        response = requests.post(
+                            roboflow_url,
+                            files=files,
+                            timeout=30
+                        )
+                
+                print(f"DEBUG: Respuesta de Roboflow - Status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    try:
+                        predictions = response.json()
+                    except Exception as e:
+                        print(f"ERROR: No se pudo parsear JSON de Roboflow: {e}")
+                        print(f"DEBUG: Respuesta raw: {response.text[:500]}")
+                        raise
+                    
+                    print(f"DEBUG: Predicciones de Roboflow (completo): {json.dumps(predictions, indent=2)}")
+                    
+                    # Procesar las predicciones de Roboflow
+                    # Roboflow puede devolver diferentes formatos según el tipo de modelo
+                    detections = []
+                    
+                    # Intentar diferentes estructuras de respuesta
+                    if 'predictions' in predictions:
+                        detections = predictions['predictions']
+                    elif 'detections' in predictions:
+                        detections = predictions['detections']
+                    elif isinstance(predictions, list):
+                        detections = predictions
+                    elif 'results' in predictions:
+                        detections = predictions['results']
+                    
+                    print(f"DEBUG: Número de detecciones encontradas: {len(detections)}")
+                    print(f"DEBUG: Estructura de la primera detección (si existe): {detections[0] if detections else 'N/A'}")
+                    
+                    # Contar detecciones por tipo
+                    acne_count = 0
+                    red_pimple_count = 0
+                    blackhead_count = 0
+                    dark_spot_count = 0
+                    nodules_count = 0
+                    papules_count = 0
+                    pustules_count = 0
+                    whitehead_count = 0
+                    
+                    for detection in detections:
+                        # Roboflow puede devolver diferentes estructuras
+                        class_name = ''
+                        confidence = 0
+                        
+                        if isinstance(detection, dict):
+                            class_name = detection.get('class', detection.get('name', '')).lower()
+                            confidence = detection.get('confidence', detection.get('score', 0))
+                        elif isinstance(detection, str):
+                            class_name = detection.lower()
+                            confidence = 1.0
+                        
+                        print(f"DEBUG: Detección - Clase: {class_name}, Confianza: {confidence}")
+                        
+                        if confidence > 0.5:  # Solo considerar detecciones con confianza > 50%
+                            normalized_class = class_name.replace('-', ' ').replace('_', ' ')
+                            if any(keyword in normalized_class for keyword in ['acne', 'acné', 'pimple', 'granito', 'zit']):
+                                if any(keyword in normalized_class for keyword in ['red', 'rojo', 'rojizo', 'inflamed']):
+                                    red_pimple_count += 1
+                                else:
+                                    acne_count += 1
+                            elif any(keyword in normalized_class for keyword in ['papule', 'pápula']):
+                                papules_count += 1
+                            elif any(keyword in normalized_class for keyword in ['pustule', 'pústula']):
+                                pustules_count += 1
+                            elif any(keyword in normalized_class for keyword in ['blackhead', 'punto negro', 'comedón', 'comedon']):
+                                blackhead_count += 1
+                            elif any(keyword in normalized_class for keyword in ['whitehead', 'punto blanco']):
+                                whitehead_count += 1
+                            elif any(keyword in normalized_class for keyword in ['dark spot', 'mancha oscura', 'spot', 'lesion', 'lesión', 'stain']):
+                                dark_spot_count += 1
+                            elif any(keyword in normalized_class for keyword in ['nodule', 'nódulo', 'quiste', 'cyst']):
+                                nodules_count += 1
+                            # Si la clase es directamente "leve", "moderado", "grave"
+                            elif class_name in ['leve', 'moderado', 'grave', 'severo', 'severe']:
+                                severity = class_name if class_name != 'severo' else 'grave'
+                                detected_features = [f"Clasificación directa: {severity}"]
+                                analysis_result = f"Severidad: {severity}. Clasificación directa del modelo."
+                                print(f"DEBUG: Severidad directa detectada en la clase: {severity}")
+                                break
+                    
+                    # Determinar severidad basada en el número de detecciones
+                    total_detections = (
+                        acne_count
+                        + blackhead_count
+                        + red_pimple_count
+                        + dark_spot_count
+                        + nodules_count
+                        + papules_count
+                        + pustules_count
+                        + whitehead_count
+                    )
+                    print(
+                        "DEBUG: Total detecciones - "
+                        f"Lesiones generales: {acne_count}, "
+                        f"Puntos negros: {blackhead_count}, "
+                        f"Granos rojos: {red_pimple_count}, "
+                        f"Dark spots: {dark_spot_count}, "
+                        f"Nódulos: {nodules_count}, "
+                        f"Pápulas: {papules_count}, "
+                        f"Pústulas: {pustules_count}, "
+                        f"Puntos blancos: {whitehead_count}, "
+                        f"Total: {total_detections}"
+                    )
+                    
+                    # Verificar si Roboflow devolvió una clasificación directa de severidad
+                    severity_direct = None
+                    if 'severity' in predictions:
+                        severity_direct = predictions.get('severity')
+                    elif 'classification' in predictions:
+                        severity_direct = predictions.get('classification')
+                    
+                    if severity_direct:
+                        severity = str(severity_direct).lower()
+                        if severity not in ['leve', 'moderado', 'grave', 'severo']:
+                            if severity in ['mild', 'light', 'leve']:
+                                severity = "leve"
+                            elif severity in ['moderate', 'moderado']:
+                                severity = "moderado"
+                            elif severity in ['severe', 'grave', 'severo']:
+                                severity = "grave"
+                            else:
+                                severity = "moderado"  # Default si no reconocemos el valor
+                        print(f"DEBUG: Severidad directa del modelo: {severity}")
+                    elif total_detections == 0:
+                        severity = "leve"
+                    elif total_detections < 5:
+                        severity = "leve"
+                    elif total_detections < 15:
+                        severity = "moderado"
+                    else:
+                        severity = "grave"
+                    
+                    # Construir descripción de características detectadas
+                    features = []
+                    if blackhead_count > 0:
+                        features.append(f"{blackhead_count} punto(s) negro(s)")
+                    if red_pimple_count > 0:
+                        features.append(f"{red_pimple_count} grano(s) rojizo(s)")
+                    if acne_count > 0:
+                        features.append(f"{acne_count} lesión(es) de acné")
+                    if dark_spot_count > 0:
+                        features.append(f"{dark_spot_count} mancha(s) oscura(s)")
+                    if papules_count > 0:
+                        features.append(f"{papules_count} pápula(s)")
+                    if pustules_count > 0:
+                        features.append(f"{pustules_count} pústula(s)")
+                    if whitehead_count > 0:
+                        features.append(f"{whitehead_count} punto(s) blanco(s)")
+                    if nodules_count > 0:
+                        features.append(f"{nodules_count} nódulo(s)/quiste(s)")
+                    
+                    detected_features = features
+                    
+                    # Crear el texto de análisis para Voiceflow
+                    if features:
+                        analysis_text = f"Severidad: {severity}. Se detectaron: {', '.join(features)}."
+                    else:
+                        analysis_text = f"Severidad: {severity}. No se detectaron características específicas."
+                    
+                    analysis_result = analysis_text
+                    print(f"DEBUG: Análisis final - Severidad: {severity}, Características: {features}")
+                    
+                else:
+                    # Si falla Roboflow, mostrar el error y usar fallback
+                    error_text = response.text
+                    print(f"ERROR: Roboflow devolvió status {response.status_code}: {error_text}")
+                    # Usar el procesador local como fallback
+                    try:
+                        import sys
+                        sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
+                        severity = determine(image_path)
+                        analysis_result = f"Severidad: {severity} (análisis local - Roboflow falló)"
+                        print(f"DEBUG: Usando análisis local - Severidad: {severity}")
+                    except Exception as e:
+                        print(f"Error en análisis local: {e}")
+                        severity = "moderado"
+                        analysis_result = "No se pudo realizar un análisis detallado, pero se detectó actividad en la piel."
+            except requests.exceptions.RequestException as e:
+                print(f"ERROR: Excepción al llamar a Roboflow: {e}")
+                # Usar fallback
+                try:
+                    import sys
+                    sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
+                    severity = determine(image_path)
+                    analysis_result = f"Severidad: {severity} (análisis local - Error de conexión)"
+                except Exception as e2:
+                    print(f"Error en análisis local: {e2}")
+                    severity = "moderado"
+                    analysis_result = "No se pudo realizar un análisis detallado, pero se detectó actividad en la piel."
+        else:
+            # Si no hay configuración de Roboflow, usar procesador local
+            try:
+                import sys
+                sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
+                severity = determine(image_path)
+                analysis_result = f"Severidad: {severity} (análisis local)"
+            except Exception as e:
+                print(f"Error en análisis local: {e}")
+                severity = "moderado"
+                analysis_result = "Análisis básico: se detectó actividad en la piel."
+                
+    except Exception as e:
+        print(f"Error al analizar imagen: {e}")
+        severity = "moderado"
+        analysis_result = "Hubo un problema al analizar la imagen, pero puedo ayudarte con recomendaciones generales."
+
+    if detected_features:
+        description = f"Severidad: <strong>{severity}</strong><br>Características detectadas: {', '.join(detected_features)}"
+    else:
+        description = f"Severidad: <strong>{severity}</strong>"
+
+    bot_html = f'''
+    <div style="text-align:left; margin:15px 0;">
+        <img src="{image_url}" style="max-width:280px; width:100%; border-radius:16px; 
+             box-shadow:0 6px 20px rgba(0,0,0,0.2); display:block; margin-bottom:12px;">
+        <div style="background:#e3f2fd; padding:14px 18px; border-radius:18px; 
+             display:inline-block; max-width:92%; border-left:4px solid #1976d2;">
+            <p style="margin:0; color:#1565c0; font-size:15px; line-height:1.5;">
+                <strong>Análisis preliminar:</strong><br>{description}
+            </p>
+        </div>
+    </div>
+    '''
+
+    return JsonResponse({
+        'html': bot_html,
+        'analysis_result': analysis_result,
+        'severity': severity,
+        'detected_features': detected_features
+    })
+
+# ============ Historial ==================
+def historial(request):
+    if not request.user.is_authenticated:
+        return redirect('login')  
+
+    usuario = request.user
+    conversaciones = Conversacion.objects.filter(usuario=usuario).order_by('-creada_en')
+    
+    # Si se proporciona un ID de conversación 
+    conversacion_id = request.GET.get('conversacion_id')
+    mensajes = None
+    conversacion_seleccionada = None
+    if conversacion_id:
+        conversacion_seleccionada = get_object_or_404(Conversacion, id=conversacion_id, usuario=usuario)
+        mensajes = Mensaje.objects.filter(conversacion=conversacion_seleccionada).order_by('creado_en')
+
+    context = {
+        'usuario': usuario,
+        'conversaciones': conversaciones,
+        'conversacion_seleccionada': conversacion_seleccionada,
+        'mensajes': mensajes,
+    }
+    return render(request, 'core/historial.html', context)
+
+# ============ guardar conversaciones ============
+
+@csrf_exempt  # ← Esto ahora SÍ funciona porque es una vista normal
+def guardar_mensaje(request):
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "No autenticado"}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    texto_usuario = data.get('mensaje_usuario', '').strip()
+    texto_bot = data.get('mensaje_bot', '').strip()
+    conversacion_id = data.get('conversacion_id')
+
+    # Crear o recuperar conversación
+    if conversacion_id:
+        try:
+            conversacion = Conversacion.objects.get(id=conversacion_id, usuario=request.user)
+        except Conversacion.DoesNotExist:
+            conversacion = Conversacion.objects.create(usuario=request.user, titulo="Nueva conversación")
+    else:
+        titulo = texto_usuario[:60] if texto_usuario else "Chat nuevo"
+        conversacion = Conversacion.objects.create(usuario=request.user, titulo=titulo)
+
+    # Guardar mensajes
+    if texto_usuario:
+        Mensaje.objects.create(conversacion=conversacion, remitente='usuario', contenido=texto_usuario)
+    if texto_bot:
+        Mensaje.objects.create(conversacion=conversacion, remitente='ia', contenido=texto_bot)
+
+    return JsonResponse({"conversacion_id": conversacion.id})
+
+# ============ recuperar las conversaciones para el chat============
+@api_view(['GET'])
+def obtener_mensajes_conversacion(request, conversacion_id):
+    if not request.user.is_authenticated:
+        return Response({"error": "No autenticado"}, status=401)
+    
+    try:
+        conversacion = Conversacion.objects.get(id=conversacion_id, usuario=request.user)
+        mensajes = conversacion.mensajes.all().order_by('creado_en')
+        data = [{
+            "remitente": msg.remitente,
+            "contenido": msg.contenido,
+            "hora": msg.creado_en.strftime("%H:%M")
+        } for msg in mensajes]
+        return Response(data)
+    except Conversacion.DoesNotExist:
+        return Response({"error": "Conversación no encontrada"}, status=404)

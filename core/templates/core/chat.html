@@ -22,7 +22,7 @@
                             <div class="profile-name">{{ usuario.nombre }}</div>
                             <div class="account-avatar">
                                 {% if user.foto_perfil %}
-                                    <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil">
+                                    <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil de {{ usuario.nombre }}">
                                 {% else %}
                                     <i class="fas fa-user"></i>
                                 {% endif %}
@@ -34,6 +34,12 @@
                                 <i class="fas fa-user"></i>
                                 Ver perfil
                             </a>
+                                   <!-- link al historial -->
+                            <a href="{% url 'historial' %}" class="dropdown-item">
+                                <i class="fas fa-history"></i>
+                                 Historial de chats
+                            </a>
+
                             <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="dropdown-item">
                                 <i class="fas fa-sign-out-alt"></i>
                                     Cerrar sesión
@@ -70,19 +76,46 @@
 
         <div class="bottom">
             <div class="textito">
-            <form method="post" action="#" class="search-bar" id="chatForm">
-            <div class="searching">
-                <button type="button" class="upload-btn">
-                <i class="fas fa-image"></i>
-                </button>
-                <input type="text" name="q" placeholder="Comunicate conmigo..." class="custom-search" id="messageInput">
-                <button type="submit" class="search-btn">
-                <i class="fas fa-search"></i>
-                </button>
+                <!-- Contenedor de vista previa -->
+            <div id="imagePreviewContainer" class="image-preview-container" style="display: none;">
+                <img id="imagePreview" src="" alt="Vista previa de imagen" />
+                <div class="image-preview-info">
+                    <span id="fileName"></span>
+                    <button id="cancelImageBtn" class="cancel-btn" title="Cancelar imagen">✖</button>
+                </div>
             </div>
+                            
+            <form method="post" action="#" class="search-bar" id="chatForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="searching">
+                    
+                    <!-- Botón para subir imagen -->
+                    <button type="button" class="upload-btn" id="uploadImageBtn">
+                        <i class="fas fa-image"></i>
+                    </button>
+
+                    <!-- Input oculto para seleccionar imagen -->
+                    <input type="file" id="imageInput" name="image" accept="image/*" style="display: none;">
+
+                    <!-- Campo de texto -->
+                    <input type="text" name="q" placeholder="Comunicate conmigo..." class="custom-search" id="messageInput">
+
+                    <!-- Botón para enviar -->
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
             </form>
+
             </div>
         </div>
+        <script>
+             document.addEventListener('keydown', function(event) {
+             if (event.key === 'Escape') {
+                  window.location.href = "{% url 'index' %}";
+                 }
+             });
+        </script>
 
     </main>
 
@@ -104,23 +137,51 @@
                     }
                 });
             }
-
+            const welcomeTitle = document.getElementById('welcome-title');
             // Configuración de Voiceflow
             const VF_API_KEY = '{{ voiceflow_api_key }}';
             console.log('VF_API_KEY desde template:', VF_API_KEY);
             console.log('Longitud de API Key:', VF_API_KEY ? VF_API_KEY.length : 0);
             
             const USER_ID = 'user_' + Math.random().toString(36).substr(2, 9);
-            const CHAT_API_URL = 'https://general-runtime.voiceflow.com/state/user/' + USER_ID;
-            const INTERACT_API_URL = 'https://general-runtime.voiceflow.com/state/user/' + USER_ID + '/interact';
+            // Usar versionID en la URL o como parámetro según la documentación de Voiceflow
+            const VERSION_ID = 'development'; // Cambiar a 'production' cuando esté listo
+            const CHAT_API_URL = `https://general-runtime.voiceflow.com/state/user/${USER_ID}?versionID=${VERSION_ID}`;
+            const INTERACT_API_URL = `https://general-runtime.voiceflow.com/state/user/${USER_ID}/interact?versionID=${VERSION_ID}`;
             let sessionInitialized = false;
 
             const chatForm = document.getElementById('chatForm');
+
+    
+       
+
+
             const messageInput = document.getElementById('messageInput');
             const chatContainer = document.getElementById('chatContainer');
             const chatMessages = document.getElementById('chatMessages');
             const logo = document.getElementById('logo');
-            const welcomeTitle = document.getElementById('welcome-title');
+         
+
+            // Variables para manejo de imágenes
+            const uploadImageBtn = document.getElementById('uploadImageBtn');
+            const imageInput = document.getElementById('imageInput');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            const imagePreview = document.getElementById('imagePreview');
+            const cancelImageBtn = document.getElementById('cancelImageBtn');
+            let selectedFile = null;
+
+            if (!chatForm || !imageInput || !uploadImageBtn) {
+                console.warn('Algunos elementos del chat/imagen no se encontraron en el DOM');
+            }
+
+            // Reiniciar vista previa al cargar la página
+            if (imagePreviewContainer) {
+                imagePreviewContainer.style.display = 'none';
+                imagePreview.src = '';
+                const fileName = document.getElementById('fileName');
+                if (fileName) fileName.textContent = '';
+                imageInput.value = '';
+            }
 
             // Inicializar sesión de Voiceflow
             async function initializeSession() {
@@ -139,6 +200,10 @@
                         })
                     });
                     console.log('Sesión inicializada:', response.status);
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Error al inicializar sesión:', response.status, errorText);
+                    }
                     sessionInitialized = true;
                 } catch (error) {
                     console.error('Error al inicializar sesión:', error);
@@ -153,6 +218,250 @@
             chatForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
+                // enviar imagen
+                if (selectedFile) {
+                    addMessage(`Imagen: ${selectedFile.name}`, 'user');
+                    showChatInterface();
+                    showTypingIndicator();
+
+                    const formData = new FormData();
+                    formData.append('image', selectedFile);
+
+                    try {
+                        const response = await fetch("/api/analyze_image/", {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-CSRFToken': getCSRFToken() }
+                        });
+
+                        if (!response.ok) throw new Error('Error en el servidor');
+
+                        const data = await response.json();
+                        
+                        // Mostrar la imagen y análisis preliminar
+                        if (data.html) {
+                            addMessage(data.html, 'bot');
+                        }
+                        
+                        // Si hay resultado de análisis, enviarlo a Voiceflow para recomendaciones
+                        if (data.analysis_result) {
+                            
+                            // Timeout para evitar que se quede colgado
+                            const timeoutId = setTimeout(() => {
+                                hideTypingIndicator();
+                                console.warn('Timeout esperando respuesta de Voiceflow');
+                            }, 30000); // 30 segundos
+                            
+                            try {
+                                // Construir mensaje más simple y directo para Voiceflow
+                                // Simplificar el mensaje para evitar errores 500
+                                const severity = data.severity || 'moderado';
+                                const features = Array.isArray(data.detected_features) ? data.detected_features.filter(Boolean) : [];
+                                
+                                let messageToVoiceflow = `Tengo un caso de acné ${severity}.`;
+                                if (features.length > 0) {
+                                    messageToVoiceflow += ` Detecté: ${features.join(', ')}.`;
+                                } else {
+                                    messageToVoiceflow += ' No tengo la lista exacta de lesiones, pero se observan varias imperfecciones.';
+                                }
+                                messageToVoiceflow += ' ¿Qué recomendaciones me das?';
+                                
+                                console.log('Enviando a Voiceflow:', messageToVoiceflow);
+                                console.log('Severidad:', severity);
+                                console.log('Características detectadas:', data.detected_features);
+                                
+                                const controller = new AbortController();
+                                const timeout = setTimeout(() => controller.abort(), 25000); // 25 segundos
+                                
+                                const vfResponse = await fetch(INTERACT_API_URL, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': VF_API_KEY
+                                    },
+                                    body: JSON.stringify({
+                                        request: {
+                                            type: 'text',
+                                            payload: messageToVoiceflow
+                                        }
+                                    }),
+                                    signal: controller.signal
+                                });
+                                
+                                clearTimeout(timeout);
+                                clearTimeout(timeoutId);
+
+                                console.log('Respuesta de Voiceflow status:', vfResponse.status);
+
+                                if (vfResponse.ok) {
+                                    const vfData = await vfResponse.json();
+                                    console.log('Datos de Voiceflow:', JSON.stringify(vfData, null, 2));
+                                    
+                                    // Procesar respuesta de Voiceflow
+                                    let hasVfMessages = false;
+                                    
+                                    // Función auxiliar para extraer texto de diferentes estructuras
+                                    function extractMessageText(item) {
+                                        if (!item) return '';
+                                        
+                                        // Si es string directo
+                                        if (typeof item === 'string') return item;
+                                        
+                                        // Si tiene payload
+                                        if (item.payload) {
+                                            if (typeof item.payload === 'string') {
+                                                return item.payload;
+                                            }
+                                            if (item.payload.message) {
+                                                return item.payload.message;
+                                            }
+                                            if (item.payload.text) {
+                                                return item.payload.text;
+                                            }
+                                            if (item.payload.slate && Array.isArray(item.payload.slate)) {
+                                                // Formato Slate de Voiceflow
+                                                return item.payload.slate.map(block => {
+                                                    if (block.children) {
+                                                        return block.children.map(child => child.text || '').join('');
+                                                    }
+                                                    return '';
+                                                }).join(' ');
+                                            }
+                                        }
+                                        
+                                        // Si tiene message directo
+                                        if (item.message) return item.message;
+                                        if (item.text) return item.text;
+                                        
+                                        return '';
+                                    }
+                                    
+                                    // Procesar según el tipo de respuesta
+                                    if (Array.isArray(vfData)) {
+                                        vfData.forEach(item => {
+                                            if (item.type === 'text' || item.type === 'speak') {
+                                                let messageText = extractMessageText(item);
+                                                
+                                                if (messageText) {
+                                                    // Limpiar el texto de caracteres escapados
+                                                    messageText = messageText
+                                                        .replace(/\\n/g, ' ')
+                                                        .replace(/\\u00e1/g, 'á')
+                                                        .replace(/\\u00e9/g, 'é')
+                                                        .replace(/\\u00ed/g, 'í')
+                                                        .replace(/\\u00f3/g, 'ó')
+                                                        .replace(/\\u00fa/g, 'ú')
+                                                        .replace(/\\'/g, "'")
+                                                        .replace(/\\"/g, '"')
+                                                        .trim();
+                                                    
+                                                    if (messageText && messageText.length > 0) {
+                                                        addMessage(messageText, 'bot');
+                                                        hasVfMessages = true;
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    } else if (vfData.type === 'text' || vfData.type === 'speak') {
+                                        let messageText = extractMessageText(vfData);
+                                        if (messageText) {
+                                            messageText = messageText
+                                                .replace(/\\n/g, ' ')
+                                                .replace(/\\u00e1/g, 'á')
+                                                .replace(/\\u00e9/g, 'é')
+                                                .replace(/\\u00ed/g, 'í')
+                                                .replace(/\\u00f3/g, 'ó')
+                                                .replace(/\\u00fa/g, 'ú')
+                                                .replace(/\\'/g, "'")
+                                                .replace(/\\"/g, '"')
+                                                .trim();
+                                            if (messageText && messageText.length > 0) {
+                                                addMessage(messageText, 'bot');
+                                                hasVfMessages = true;
+                                            }
+                                        }
+                                    } else {
+                                        // Intentar extraer cualquier texto disponible
+                                        let messageText = extractMessageText(vfData);
+                                        if (messageText) {
+                                            messageText = messageText
+                                                .replace(/\\n/g, ' ')
+                                                .replace(/\\u00e1/g, 'á')
+                                                .replace(/\\u00e9/g, 'é')
+                                                .replace(/\\u00ed/g, 'í')
+                                                .replace(/\\u00f3/g, 'ó')
+                                                .replace(/\\u00fa/g, 'ú')
+                                                .replace(/\\'/g, "'")
+                                                .replace(/\\"/g, '"')
+                                                .trim();
+                                            if (messageText && messageText.length > 0) {
+                                                addMessage(messageText, 'bot');
+                                                hasVfMessages = true;
+                                            }
+                                        }
+                                    }
+                                    
+                                    hideTypingIndicator();
+                                    
+                                    if (!hasVfMessages) {
+                                        console.log('Voiceflow no devolvió mensajes en el formato esperado. Estructura completa:', vfData);
+                                        // No mostrar mensaje de error al usuario, solo loguear
+                                    }
+                                } else {
+                                    clearTimeout(timeoutId);
+                                    hideTypingIndicator();
+                                    
+                                    let errorText = '';
+                                    try {
+                                        errorText = await vfResponse.text();
+                                        console.error('Error en respuesta de Voiceflow:', vfResponse.status, errorText);
+                                    } catch (e) {
+                                        console.error('Error al leer respuesta de Voiceflow:', vfResponse.status);
+                                    }
+                                    
+                                    // Si es error 500, puede ser un problema del servidor de Voiceflow
+                                    // O el formato del mensaje no es compatible
+                                    if (vfResponse.status === 500) {
+                                        console.warn('Voiceflow devolvió error 500. Esto puede deberse a un problema del servidor o formato del mensaje.');
+                                        // Opcional: mostrar un mensaje genérico al usuario
+                                        // addMessage('El asistente no está disponible en este momento. Por favor, intenta más tarde.', 'bot');
+                                    }
+                                    // No mostrar error al usuario si Voiceflow falla, solo loguear
+                                }
+                            } catch (vfError) {
+                                clearTimeout(timeoutId);
+                                hideTypingIndicator();
+                                console.error('Error al enviar a Voiceflow:', vfError);
+                                
+                                // Si es un error de aborto (timeout), mostrar mensaje amigable
+                                if (vfError.name === 'AbortError') {
+                                    console.warn('La solicitud a Voiceflow fue cancelada por timeout');
+                                }
+                                // No mostrar error al usuario, solo loguear
+                            }
+                        } else {
+                            hideTypingIndicator();
+                        }
+
+                    } catch (error) {
+                        hideTypingIndicator();
+                        console.error('Error al enviar la imagen:', error);
+                        // Solo mostrar error si es crítico
+                        if (error.message && !error.message.includes('JSON')) {
+                            addMessage('Error al procesar la imagen. Por favor, intenta de nuevo.', 'bot');
+                        }
+                    } finally {
+                        // Limpiar vista previa
+                        selectedFile = null;
+                        imageInput.value = '';
+                        imagePreviewContainer.style.display = 'none';
+                        imagePreview.src = '';
+                        document.getElementById('fileName').textContent = '';
+                    }
+                    return;
+                }
+
+                //enviar texto
                 const message = messageInput.value.trim();
                 if (!message) return;
 
@@ -220,21 +529,139 @@
                     
                     if (!hasMessages) {
                         console.log('No se encontraron mensajes en la estructura esperada');
-                        addMessage('No recibí una respuesta válida del asistente.', 'bot');
+                        const fallbackMessage = 'No recibí una respuesta válida del asistente.';
+                        addMessage(fallbackMessage, 'bot');
+    
+                        // guarda el mensaje de error 
+                        guardarEnBaseDeDatos(message, fallbackMessage);
+                    } else {
+                        // guardar el último mensaje del bot
+                        const ultimoMensajeBot = document.querySelectorAll('#chatMessages .message.bot').length > 0
+                            ? document.querySelector('#chatMessages .message.bot:last-child').textContent || "Respuesta del asistente"
+                            : "Respuesta del asistente";
+                            
+                        guardarEnBaseDeDatos(message, ultimoMensajeBot);
                     }
+
                 } catch (error) {
                     hideTypingIndicator();
                     console.error('Error completo:', error);
-                    addMessage('Lo siento, hubo un error al procesar tu mensaje: ' + error.message, 'bot');
+                    // Mejorar el mensaje de error
+                    let errorMessage = 'Lo siento, hubo un error al procesar tu mensaje.';
+                    if (error.message && error.message.includes('Failed to fetch')) {
+                        errorMessage = 'No se pudo conectar con el servidor. Por favor, verifica tu conexión.';
+                    } else if (error.message && error.message.includes('401')) {
+                        errorMessage = 'Error de autenticación. Por favor, recarga la página.';
+                    }
+                    addMessage(errorMessage, 'bot');
                 }
+                
+
             });
 
-            function addMessage(message, sender) {
+            // === FUNCIONES AUXILIARES ===
+            // === GUARDAR EN BASE DE DATOS ===
+            async function guardarEnBaseDeDatos(mensajeUsuario, mensajeBot) {
+                const csrfToken = getCSRFToken();  // ← Ya tienes esto
+
+                try {
+                    const response = await fetch('/api/guardar-mensaje/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken,  // ← ESTA LÍNEA RESUELVE EL 403
+                        },
+                        body: JSON.stringify({
+                            mensaje_usuario: mensajeUsuario,
+                            mensaje_bot: mensajeBot || "Sin respuesta",
+                            conversacion_id: localStorage.getItem('conversacion_actual') || null
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.conversacion_id) {
+                            localStorage.setItem('conversacion_actual', data.conversacion_id);
+                        }
+                    } else {
+                        console.error("Error en respuesta:", response.status);
+                    }
+                } catch (err) {
+                    console.log("Error al guardar:", err);
+                }
+            }
+
+            function addMessage(content, sender) {
+                // Evitar mensajes vacíos o solo espacios
+                if (!content || (typeof content === 'string' && content.trim().length === 0)) {
+                    return;
+                }
+                
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
-                messageDiv.textContent = message;
+                
+                // Detectar si es HTML válido (debe tener tags HTML completos)
+                const htmlRegex = /<[a-z][\s\S]*>/i;
+                const isHTML = htmlRegex.test(content) && content.includes('</');
+                
+                if (isHTML) {
+                    messageDiv.innerHTML = content;
+                } else {
+                    // Limpiar caracteres escapados antes de mostrar
+                    let cleanContent = String(content)
+                        .replace(/\\n/g, '\n')
+                        .replace(/\\t/g, '\t')
+                        .replace(/\\u00e1/g, 'á')
+                        .replace(/\\u00e9/g, 'é')
+                        .replace(/\\u00ed/g, 'í')
+                        .replace(/\\u00f3/g, 'ó')
+                        .replace(/\\u00fa/g, 'ú')
+                        .replace(/\\u00c1/g, 'Á')
+                        .replace(/\\u00c9/g, 'É')
+                        .replace(/\\u00cd/g, 'Í')
+                        .replace(/\\u00d3/g, 'Ó')
+                        .replace(/\\u00da/g, 'Ú')
+                        .replace(/\\'/g, "'")
+                        .replace(/\\"/g, '"');
+                    
+                    const formatted = renderMarkdown(cleanContent);
+                    messageDiv.innerHTML = formatted;
+                }
                 chatMessages.appendChild(messageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function escapeHTML(text) {
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function renderMarkdown(text) {
+                let escaped = escapeHTML(text);
+                
+                // Resaltar títulos estilo Markdown (##, ###)
+                escaped = escaped.replace(/^###\s?(.*)$/gm, '<h4>$1</h4>');
+                escaped = escaped.replace(/^##\s?(.*)$/gm, '<h3>$1</h3>');
+                escaped = escaped.replace(/^#\s?(.*)$/gm, '<h2>$1</h2>');
+
+                // Negritas y cursivas
+                escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                escaped = escaped.replace(/__(.+?)__/g, '<strong>$1</strong>');
+                escaped = escaped.replace(/\*(.+?)\*/g, '<em>$1</em>');
+                escaped = escaped.replace(/_(.+?)_/g, '<em>$1</em>');
+
+                // Listas (líneas que comienzan con - o •)
+                escaped = escaped.replace(/(^|\n)\s*[-•]\s+(.*)/g, '$1&#8226; $2');
+
+                // Saltos de línea
+                escaped = escaped.replace(/\n{2,}/g, '<br><br>');
+                escaped = escaped.replace(/\n/g, '<br>');
+
+                return escaped;
             }
 
             function showTypingIndicator() {
@@ -248,9 +675,117 @@
 
             function hideTypingIndicator() {
                 const typing = document.getElementById('typing-indicator');
-                if (typing) {
-                    typing.remove();
-                }
+                if (typing) typing.remove();
             }
+
+            function getCSRFToken() {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                return csrfToken || '';
+            }
+
+            function showChatInterface() {
+                if (chatContainer.style.display === 'block') return;
+                logo.style.display = 'none';
+                welcomeTitle.style.display = 'none';
+                chatContainer.style.display = 'block';
+            }
+
+            // === MANEJO DE IMÁGENES ===
+            // VISTA PREVIA 
+            uploadImageBtn.addEventListener('click', () => {
+                imageInput.value = '';
+                imageInput.click();
+            });
+
+            imageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    imagePreview.src = event.target.result;
+                    const isMobile = window.innerWidth <= 480;
+
+                    // Asignamos el tamaño perfecto según dispositivo
+                    if (isMobile) {
+                        imagePreview.style.width = '78px';
+                        imagePreview.style.height = '78px';
+                    } else {
+                        imagePreview.style.width = '200px';
+                        imagePreview.style.height = '200px';
+                    }
+
+                    // Estilos comunes (siempre aplican)
+                    imagePreview.style.objectFit = 'cover';
+                    imagePreview.style.borderRadius = '16px';
+                    imagePreview.style.boxShadow = '0 6px 18px rgba(0,0,0,0.3)';
+                    imagePreview.style.border = '4px solid white';
+                    imagePreview.style.display = 'block';
+                    document.getElementById('fileName').textContent = file.name;
+                    imagePreviewContainer.style.display = 'flex';
+                };
+
+                reader.readAsDataURL(file);
+            });
+
+            // Eliminar la imagen cargada
+            cancelImageBtn.addEventListener('click', () => {
+                selectedFile = null;
+                imageInput.value = '';
+                imagePreviewContainer.style.display = 'none';
+                imagePreview.src = '';
+                document.getElementById('fileName').textContent = '';
+            });
+
+
+
+                   // === CARGAR CONVERSACIÓN DESDE HISTORIAL ===
+            const conversacionIdParaCargar = localStorage.getItem('cargar_conversacion_id');
+            if (conversacionIdParaCargar) {
+                const titulo = localStorage.getItem('cargar_conversacion_titulo') || "Conversación antigua";
+                
+                // Mostrar título de carga
+                welcomeTitle.textContent = `Cargando: ${titulo}...`;
+                welcomeTitle.style.display = 'block';
+                showChatInterface();
+
+                console.log(`Cargando conversación ID: ${conversacionIdParaCargar}`);
+
+                fetch(`/api/conversacion/${conversacionIdParaCargar}/mensajes/`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    }
+                })
+                .then(response => {
+                    console.log("Status:", response.status);
+                    if (!response.ok) throw new Error("Error " + response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos recibidos de la API:", data);  // Añadido para depuración
+                    const mensajes = Array.isArray(data) ? data : (data.mensajes || []);  // Maneja formatos comunes
+                    chatMessages.innerHTML = '';
+                    mensajes.forEach(msg => {
+                        const remitente = msg.remitente === 'usuario' ? 'user' : 'bot';
+                        addMessage(msg.contenido, remitente);
+                    });
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                    // GUARDAR ID para que nuevos mensajes sigan en esta conversación
+                    localStorage.setItem('conversacion_actual', conversacionIdParaCargar);
+                })
+                .catch(err => {
+                    console.error("Error cargando conversación:", err);
+                    addMessage("No se pudo cargar la conversación anterior.", 'bot');
+                })
+                .finally(() => {
+                    welcomeTitle.style.display = 'none';  // Siempre ocultar al final
+                    localStorage.removeItem('cargar_conversacion_id');
+                    localStorage.removeItem('cargar_conversacion_titulo');
+                });
+            } else {
+                welcomeTitle.textContent = "Bienvenido a DermaChat";
+            }    
         });
     </script>

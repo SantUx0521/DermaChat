@@ -26,15 +26,24 @@ urlpatterns = [
     path('reestablecer/<str:token>/', views.restablecer_contraseña, name='restablecer'),
     path('logout/', views.logout_view, name='logout'),
     path('Contacto/', views.contacto, name='contact'),
-     path('contacto/enviado/', views.contacto_enviado, name='contact_sent'),
+    path('contacto/enviado/', views.contacto_enviado, name='contact_sent'),
+    path('payment/success/', views.payment_success, name='payment_success'),
+    path('payment/failure/', views.payment_failure, name='payment_failure'),
+    path('payment/pending/', views.payment_pending, name='payment_pending'),
 
     path('verificar-email/<str:token>/', views.verificar_email, name='verificar_email'),
     path('reenviar-verificacion/', views.reenviar_verificacion, name='reenviar_verificacion'),
     path('chat/', views.chat, name='chat'),
+    path('select-plan/', views.select_plan, name='select_plan'),
+    path('payment-options/', views.payment_options, name='payment_options'),
 
     path('api/', include(router.urls)),
     path('api/registro/', RegistroUsuarioView.as_view(), name='api_registro'),
     path('api/login/', LoginView.as_view(), name='api_login'),
     path('api/', include(router.urls)),
-    
+    path('api/analyze_image/', views.analyze_image, name='analyze_image'),
+    path('api/conversacion/<int:conversacion_id>/mensajes/', views.obtener_mensajes_conversacion, name='obtener_mensajes'),
+    path('historial/', views.historial, name='historial'),
+    path('api/guardar-mensaje/', views.guardar_mensaje, name='guardar_mensaje'),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

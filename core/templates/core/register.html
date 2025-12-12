@@ -16,33 +16,35 @@
       <div class="left">
         <h1>Registro</h1>
         {% if error %}
-        <p style="color: red; text-align: center;">{{ error }}</p>
+        <p role="alert" aria-live="assertive" class="error-message" style="color: red; text-align: center;">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> {{ error }}
+        </p>
         {% endif %}
-        <form method="post" action="{% url 'register' %}" id="registerForm">
+        <div id="validation_errors" role="alert" aria-live="assertive" style="display: none;"></div>
+        <form method="post" action="{% url 'register' %}" id="registerForm" novalidate>
           {% csrf_token %}
           <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
           <input type="hidden" name="tipo_usuario" value="cliente">
           <div class="Username">
-              <input type="text" name="nombre" required>
-              <label>Nombre de usuario</label>
+              <input type="text" name="nombre" id="id_nombre" required>
+              <label for="id_nombre">Nombre de usuario</label>
               <span></span>
           </div>
           <div class="Username">
-              <input type="email" name="email" required>
-              <label>Correo electrónico</label>
+              <input type="email" name="email" id="id_email" required>
+              <label for="id_email">Correo electrónico</label>
               <span></span>
           </div>
           <div class="Username">
               <input type="password" name="password" id="password" required>
-              <label>Contraseña</label>
+              <label for="password">Contraseña</label>
               <span></span>
           </div>
           <div class="Username">
               <input type="password" name="confirm_password" id="confirm_password" required>
-              <label>Confirmar contraseña</label>
+              <label for="confirm_password">Confirmar contraseña</label>
               <span></span>
           </div>
-          <p id="password_error" style="color: red; display: none;">Las contraseñas no coinciden</p>
           <input type="submit" value="Registrarse">
           <div class="iniciar">
               ¿Ya se registró?<a href="{% url 'login' %}">Iniciar sesión</a>
@@ -58,18 +60,62 @@
   </div>
 
   <script>
+    // Prevenir tooltips nativos del navegador
+    document.querySelectorAll('#registerForm input[required]').forEach(function(input) {
+      input.addEventListener('invalid', function(e) {
+        e.preventDefault();
+      });
+    });
+
     document.getElementById('registerForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const nombre = document.getElementById('id_nombre').value.trim();
+      const email = document.getElementById('id_email').value.trim();
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirm_password').value;
-      const errorElement = document.getElementById('password_error');
-
-      if (password !== confirmPassword) {
-        e.preventDefault();
-        errorElement.style.display = 'block';
+      const errorContainer = document.getElementById('validation_errors');
+      
+      let errors = [];
+      
+      if (!nombre) {
+        errors.push('El nombre de usuario es requerido');
+      }
+      
+      if (!email) {
+        errors.push('El correo electrónico es requerido');
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push('El correo electrónico debe ser válido');
+      }
+      
+      if (!password) {
+        errors.push('La contraseña es requerida');
+      }
+      
+      if (!confirmPassword) {
+        errors.push('La confirmación de contraseña es requerida');
+      }
+      
+      if (password && confirmPassword && password !== confirmPassword) {
+        errors.push('Las contraseñas no coinciden');
+      }
+      
+      if (errors.length > 0) {
+        errorContainer.innerHTML = '<p style="color: red; text-align: center; margin: 10px 0;"><i class="fas fa-exclamation-triangle"></i> ' + errors.join(' | ') + '</p>';
+        errorContainer.style.display = 'block';
       } else {
-        errorElement.style.display = 'none';
+        errorContainer.style.display = 'none';
+        this.submit();
       }
     });
   </script>
+    <script>
+    document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      window.location.href = "{% url 'index' %}";
+         }
+     });
+    </script>
+
 </body>
 </html>
