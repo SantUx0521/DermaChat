@@ -276,6 +276,14 @@ body {
 }
 
 @media (max-width: 768px) {
+    html {
+        font-size: 8px;
+    }
+    
+    h1{
+        font-size: 50px;
+    }
+
     body {
         background: #0B4F6C;
     }
@@ -286,13 +294,13 @@ body {
     }
     
     .top {
-        flex-direction: column;
+        flex-direction: row;
         gap: 1rem;
         padding: 1rem;
     }
 
     .nav {
-        flex-direction: column;
+        flex-direction: row;
         gap: 1rem;
     }
 

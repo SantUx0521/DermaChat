@@ -364,8 +364,21 @@ body {
     transform: scale(1.1);
 }
 
-/* Responsive: más pequeña en móvil */
-@media (max-width: 480px) {
+@media (min-width: 0px) and (max-width: 750px) {
+    html {
+        font-size: 8px;
+    }
+
+    .home-icon {
+        top: 15px;
+        left: 15px;
+        font-size: 50px;
+    }
+
+    * {
+        transform: scale(1.5);
+        transform-origin: top left;
+    }
     #imagePreviewContainer {
         padding: 8px 12px;
         margin: 8px 10px;
@@ -379,7 +392,6 @@ body {
     #fileName { font-size: 13px; }
 }
 
-/* Animación suave al aparecer */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
     to   { opacity: 1; transform: translateY(0); }

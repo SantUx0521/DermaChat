@@ -183,6 +183,12 @@ input[type="submit"]:hover{
   .main .center .search {
     width: 500px;
   }
+
+  /* Ajuste ligero para imágenes */
+  .left img {
+    width: 55px;
+    height: 55px;
+  }
 }
 
 @media screen and (max-width: 580px) {
@@ -197,6 +203,12 @@ input[type="submit"]:hover{
   .main .center .search {
     width: 350px;
   }
+
+  /* Más pequeño aún */
+  .left img {
+    width: 45px;
+    height: 45px;
+  }
 }
 
 @media screen and (max-width: 420px) {
@@ -206,5 +218,11 @@ input[type="submit"]:hover{
 
   .main .center .search {
     width: 250px;
+  }
+
+  /* Tamaño mínimo para pantallas muy pequeñas */
+  .left img {
+    width: 35px;
+    height: 35px;
   }
 }

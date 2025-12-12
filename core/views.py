@@ -2,6 +2,7 @@ from itertools import count
 import json
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from rest_framework import viewsets, permissions, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -505,52 +506,61 @@ def select_plan(request):
 def payment_options(request):
     if not request.user.is_authenticated:
         return redirect('login')
-    
+
     usuario = request.user
-    
+
     if request.method == 'POST':
         payment_plan = request.POST.get('payment_plan')
-        
+
         if payment_plan:
             sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+
+            success_url = request.build_absolute_uri(reverse("payment_success"))
+            failure_url = request.build_absolute_uri(reverse("payment_failure"))
+            pending_url = request.build_absolute_uri(reverse("payment_pending"))
+
             preference_data = {
                 "items": [
                     {
                         "title": "Suscripción Premium DermaChat",
                         "quantity": 1,
                         "currency_id": "COP",
-                        "unit_price": 1
+                        "unit_price": 1,
                     }
                 ],
                 "payer": {
                     "email": usuario.email,
                 },
                 "back_urls": {
-                    "success": request.build_absolute_uri("/payment/success/"),
-                    "failure": request.build_absolute_uri("/payment/failure/"),
-                    "pending": request.build_absolute_uri("/payment/pending/")
+                    "success": success_url,
+                    "failure": failure_url,
+                    "pending": pending_url,
                 },
                 "auto_return": "approved",
             }
+
             preference_response = sdk.preference().create(preference_data)
             preference = preference_response["response"]
-            print(preference_response)
 
-            return redirect(preference["init_point"])
-    
-    usuario = request.user
+            init_point = preference.get("init_point") or preference.get("sandbox_init_point")
+            if not init_point:
+                print("⚠️ Mercado Pago no devolvió URL de pago:", preference)
+                return JsonResponse({"error": "Mercado Pago no devolvio URL de pago"}, status=500)
+
+            return redirect(init_point)
+
     context = {
-        'usuario': usuario,
-        'premium_benefits': [
-            'Análisis ilimitado de imágenes',
-            'Prioridad en el análisis',
-            'Acceso a reportes detallados',
-            'Soporte prioritario',
-            'Sin límites de uso diario',
-            'Historial completo de análisis'
-        ]
+        "usuario": usuario,
+        "premium_benefits": [
+            "Análisis ilimitado de imágenes",
+            "Prioridad en el análisis",
+            "Acceso a reportes detallados",
+            "Soporte prioritario",
+            "Sin límites de uso diario",
+            "Historial completo de análisis",
+        ],
     }
-    return render(request, 'core/payment_options.html', context)
+    return render(request, "core/payment_options.html", context)
 
 def payment_success(request):
     user = request.user
