@@ -4,58 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Historial de Conversaciones</title>
-    <link rel="stylesheet" href="{% static 'core/css/chat.css' %}">  <!-- Reutiliza tu CSS de chat si aplica -->
+    <link rel="stylesheet" href="{% static 'core/css/chat.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/historial.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        /* Estilos básicos para el historial */
-        .historial-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .conversaciones-lista {
-            list-style: none;
-            padding: 0;
-        }
-        .conversacion-item {
-            background: #f0f0f0;
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .conversacion-item:hover {
-            background: #e0e0e0;
-        }
-        .mensajes-detalle {
-            margin-top: 20px;
-            border-top: 1px solid #ccc;
-            padding-top: 20px;
-        }
-        .mensaje {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 8px;
-        }
-        .mensaje.usuario {
-            background: #d1e7dd;
-            text-align: right;
-        }
-        .mensaje.ia {
-            background: #e3f2fd;
-            text-align: left;
-        }
-    </style>
 </head>
 <body>
-    <main class="main">
-        <div class="top">
+    <div class="top">
             <a href="{% url 'index' %}" class="home-icon" title="Volver al inicio">
                 <i class="fas fa-home"></i>
             </a>
-            <!-- Puedes reutilizar el menú de cuenta de chat.html aquí si lo deseas -->
         </div>
-
+        
+    <main class="main">
         <div class="historial-container">
             <h1>Historial de Conversaciones de {{ usuario.nombre }}</h1>
             
@@ -88,8 +48,12 @@
                 </div>
             {% endif %}
 
-            <a href="{% url 'chat' %}" class="btn">Volver al Chat</a>
-            <a href="{% url 'profile' %}" class="btn">Volver al Perfil</a>
+            <form method="post" action="{% url 'chat' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <button type="submit" class="go-button">
+                    <i class="fa fa-comments" aria-hidden="true"></i> Volver al chat
+                </button>
+            </form>
         </div>
         
     </main>
@@ -113,7 +77,6 @@
                 localStorage.setItem('cargar_conversacion_id', conversacionId);
                 localStorage.setItem('cargar_conversacion_titulo', titulo);
                 
-                // Ir al chat
                 window.location.href = "{% url 'chat' %}";
             });
         });

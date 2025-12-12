@@ -6,6 +6,7 @@ from django.contrib.auth.hashers import make_password
 from django.urls import reverse
 from rest_framework.authtoken.models import Token
 from rest_framework import status
+from .models import Usuario
 
 @pytest.fixture
 def usuario_existente(db):

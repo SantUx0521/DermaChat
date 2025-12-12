@@ -13,7 +13,6 @@ from .models import *
 from .serializers import *
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import login
-#verificacion de email
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
@@ -290,7 +289,6 @@ def eliminar_cuenta_usuario(request):
     """Vista para eliminar la cuenta del usuario"""
     if request.method == 'POST':
         try:
-            # Eliminar el usuario (esto también eliminará todas las relaciones)
             usuario = request.user
             usuario.delete()
             # Cerrar sesión
@@ -309,7 +307,6 @@ class ConversacionViewSet(viewsets.ModelViewSet):
     filterset_fields = ['titulo']
 
     def get_queryset(self):
-        #filtro para que cada usuario sea el unico en ver sus comveraciones
         return Conversacion.objects.filter(usuario=self.request.user).order_by('-creada_en')
 
     def perform_create(self, serializer):
@@ -817,7 +814,6 @@ def analyze_image(request):
                     try:
                         import sys
                         sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
-                        severity = determine(image_path)
                         analysis_result = f"Severidad: {severity} (análisis local - Roboflow falló)"
                         print(f"DEBUG: Usando análisis local - Severidad: {severity}")
                     except Exception as e:
@@ -830,7 +826,6 @@ def analyze_image(request):
                 try:
                     import sys
                     sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
-                    severity = determine(image_path)
                     analysis_result = f"Severidad: {severity} (análisis local - Error de conexión)"
                 except Exception as e2:
                     print(f"Error en análisis local: {e2}")
@@ -841,7 +836,6 @@ def analyze_image(request):
             try:
                 import sys
                 sys.path.append(os.path.join(settings.BASE_DIR, 'ChatBot-IA'))
-                severity = determine(image_path)
                 analysis_result = f"Severidad: {severity} (análisis local)"
             except Exception as e:
                 print(f"Error en análisis local: {e}")
@@ -878,7 +872,7 @@ def analyze_image(request):
         'detected_features': detected_features
     })
 
-# ============ Historial ==================
+# Historial 
 def historial(request):
     if not request.user.is_authenticated:
         return redirect('login')  
@@ -902,9 +896,9 @@ def historial(request):
     }
     return render(request, 'core/historial.html', context)
 
-# ============ guardar conversaciones ============
+# Guardar conversaciones
 
-@csrf_exempt  # ← Esto ahora SÍ funciona porque es una vista normal
+@csrf_exempt
 def guardar_mensaje(request):
     if request.method != 'POST':
         return JsonResponse({"error": "Método no permitido"}, status=405)
@@ -939,7 +933,7 @@ def guardar_mensaje(request):
 
     return JsonResponse({"conversacion_id": conversacion.id})
 
-# ============ recuperar las conversaciones para el chat============
+# Recuperar las conversaciones para el chat
 @api_view(['GET'])
 def obtener_mensajes_conversacion(request, conversacion_id):
     if not request.user.is_authenticated:
