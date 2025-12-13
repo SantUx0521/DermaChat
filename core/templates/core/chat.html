@@ -149,7 +149,7 @@
             const CHAT_API_URL = `https://general-runtime.voiceflow.com/state/user/${USER_ID}?versionID=${VERSION_ID}`;
             const INTERACT_API_URL = `https://general-runtime.voiceflow.com/state/user/${USER_ID}/interact?versionID=${VERSION_ID}`;
             let sessionInitialized = false;
-
+            let mensajesParaGuardar = []; // Array para almacenar mensajes del bot     
             const chatForm = document.getElementById('chatForm');
 
     
@@ -243,6 +243,10 @@
                             addMessage(data.html, 'bot');
                         }
                         
+                        // Guardar el texto marcado en la base de datos
+                        if (data.marked_text) {
+                            // Esto reemplaza el guardado anterior
+                            await guardarEnBaseDeDatos(`Imagen: ${selectedFile.name}`, data.marked_text);}
                         // Si hay resultado de análisis, enviarlo a Voiceflow para recomendaciones
                         if (data.analysis_result) {
                             
@@ -357,6 +361,7 @@
                                                     
                                                     if (messageText && messageText.length > 0) {
                                                         addMessage(messageText, 'bot');
+                                                        mensajesParaGuardar.push(messageText);
                                                         hasVfMessages = true;
                                                     }
                                                 }
@@ -377,6 +382,7 @@
                                                 .trim();
                                             if (messageText && messageText.length > 0) {
                                                 addMessage(messageText, 'bot');
+                                                mensajesParaGuardar.push(messageText);
                                                 hasVfMessages = true;
                                             }
                                         }
@@ -396,11 +402,15 @@
                                                 .trim();
                                             if (messageText && messageText.length > 0) {
                                                 addMessage(messageText, 'bot');
+                                                mensajesParaGuardar.push(messageText);
                                                 hasVfMessages = true;
                                             }
                                         }
                                     }
-                                    
+
+                                    for (const texto of mensajesParaGuardar) {
+                                            await guardarEnBaseDeDatos('', texto);
+                                        }
                                     hideTypingIndicator();
                                     
                                     if (!hasVfMessages) {
@@ -592,25 +602,59 @@
             }
 
             function addMessage(content, sender) {
-                // Evitar mensajes vacíos o solo espacios
                 if (!content || (typeof content === 'string' && content.trim().length === 0)) {
                     return;
                 }
-                
+
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
-                
-                // Detectar si es HTML válido (debe tener tags HTML completos)
+
+                // === DETECCIÓN DE ANÁLISIS DE IMAGEN GUARDADO EN HISTORIAL ===
+                if (typeof content === 'string' && content.startsWith('//$ANÁLISIS_IMAGEN$//')) {
+                    const raw = content.substring('//$ANÁLISIS_IMAGEN$//'.length);
+                    const parts = raw.split('|');
+                    
+                    if (parts.length >= 2) {
+                        const imageUrl = parts[0].trim();
+                        const severity = parts[1].trim();
+                        const featuresStr = parts.length > 2 ? parts[2] : '';
+                        const features = featuresStr.split(' | ').filter(f => f.trim());
+
+                        const featuresText = features.length > 0 
+                            ? 'Características detectadas: ' + features.join(', ')
+                            : 'No se detectaron lesiones específicas.';
+
+                        const html = `
+                        <div style="text-align:left; margin:15px 0;">
+                            <img src="${imageUrl}" style="max-width:280px; width:100%; border-radius:16px; 
+                                box-shadow:0 6px 20px rgba(0,0,0,0.2); display:block; margin-bottom:12px;">
+                            <div style="background:#e3f2fd; padding:14px 18px; border-radius:18px; 
+                                display:inline-block; max-width:92%; border-left:4px solid #1976d2;">
+                                <p style="margin:0; color:#1565c0; font-size:15px; line-height:1.5;">
+                                    <strong>Análisis preliminar:</strong><br>
+                                    Severidad: <strong>${severity.charAt(0).toUpperCase() + severity.slice(1)}</strong><br>
+                                    ${featuresText}
+                                </p>
+                            </div>
+                        </div>`;
+
+                        messageDiv.innerHTML = html;
+                        chatMessages.appendChild(messageDiv);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        return; // Importante: salir aquí para no procesar como texto normal
+                    }
+                }
+
+                // === SI ES HTML DIRECTO (análisis en tiempo real) ===
                 const htmlRegex = /<[a-z][\s\S]*>/i;
                 const isHTML = htmlRegex.test(content) && content.includes('</');
-                
+
                 if (isHTML) {
                     messageDiv.innerHTML = content;
                 } else {
-                    // Limpiar caracteres escapados antes de mostrar
+                    // Texto normal o respuestas de Voiceflow
                     let cleanContent = String(content)
                         .replace(/\\n/g, '\n')
-                        .replace(/\\t/g, '\t')
                         .replace(/\\u00e1/g, 'á')
                         .replace(/\\u00e9/g, 'é')
                         .replace(/\\u00ed/g, 'í')
@@ -623,10 +667,11 @@
                         .replace(/\\u00da/g, 'Ú')
                         .replace(/\\'/g, "'")
                         .replace(/\\"/g, '"');
-                    
+
                     const formatted = renderMarkdown(cleanContent);
                     messageDiv.innerHTML = formatted;
                 }
+
                 chatMessages.appendChild(messageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }

@@ -848,10 +848,14 @@ def analyze_image(request):
         analysis_result = "Hubo un problema al analizar la imagen, pero puedo ayudarte con recomendaciones generales."
 
     if detected_features:
+        features_str = " | ".join(detected_features)  # Separador claro y seguro
         description = f"Severidad: <strong>{severity}</strong><br>Características detectadas: {', '.join(detected_features)}"
     else:
+        features_str = ""
         description = f"Severidad: <strong>{severity}</strong>"
-
+    
+    # Marcador especial que será reconocido por el frontend
+    marked_text = f"//$ANÁLISIS_IMAGEN$//{image_url}|{severity}|{features_str}"
     bot_html = f'''
     <div style="text-align:left; margin:15px 0;">
         <img src="{image_url}" style="max-width:280px; width:100%; border-radius:16px; 
@@ -869,7 +873,8 @@ def analyze_image(request):
         'html': bot_html,
         'analysis_result': analysis_result,
         'severity': severity,
-        'detected_features': detected_features
+        'detected_features': detected_features,
+        'marked_text': marked_text
     })
 
 # Historial 
@@ -950,3 +955,4 @@ def obtener_mensajes_conversacion(request, conversacion_id):
         return Response(data)
     except Conversacion.DoesNotExist:
         return Response({"error": "Conversación no encontrada"}, status=404)
+
