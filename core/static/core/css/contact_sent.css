@@ -122,7 +122,7 @@ body.fade-out {
 }
 @media screen and (max-width: 750px) {
   html {
-        font-size: 8px;
+        font-size: 15px;
     }
 
   .main .center .search {

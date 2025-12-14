@@ -255,16 +255,17 @@ body {
 
 @media (max-width: 768px) {
     .plan-selection-container {
+        font-size: 14px;
         margin-top: 80px;
         padding: 1rem;
     }
 
     .plan-header h1 {
-        font-size: 1.8rem;
+        font-size: 32px;
     }
 
     .plan-header .subtitle {
-        font-size: 1rem;
+        font-size: 16px;
     }
 
     .plans-form {
