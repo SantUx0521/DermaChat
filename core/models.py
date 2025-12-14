@@ -28,6 +28,9 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     es_premium = models.BooleanField(default=False)
     token_recuperacion = models.CharField(max_length=100, blank=True, null=True)
     token_verificacion = models.CharField(max_length=100, blank=True, null=True)
+    fecha_token = models.DateTimeField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
     objects = UsuarioManager()
 
     USERNAME_FIELD = 'email'

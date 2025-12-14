@@ -20,6 +20,12 @@
             <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> {{ error }}
         </p>
         {% endif %}
+        {% if email_enviado %}
+        <div id="success-message" class="success-popup" role="alert" aria-live="assertive">
+            <i class="fas fa-check-circle"></i>
+            <p>Se ha enviado un correo de verificación a <strong>{{ email }}</strong>. Por favor, revisa tu bandeja de entrada y haz clic en el enlace para verificar tu cuenta.</p>
+        </div>
+        {% endif %}
         <div id="validation_errors" role="alert" aria-live="assertive" style="display: none;"></div>
         <form method="post" action="{% url 'register' %}" id="registerForm" novalidate>
           {% csrf_token %}
@@ -59,6 +65,59 @@
     </div>
   </div>
 
+  <style>
+    .success-popup {
+      background: linear-gradient(135deg, #0B4F6C 0%, #01BAEF 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+      box-shadow: 0 4px 15px rgba(11, 79, 108, 0.4);
+      animation: slideIn 0.3s ease-out;
+      text-align: center;
+    }
+    
+    .success-popup i {
+      font-size: 32px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    
+    .success-popup p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    
+    .success-popup strong {
+      font-weight: 600;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+    
+    .success-popup.fade-out {
+      animation: fadeOut 0.5s ease-out forwards;
+    }
+  </style>
+  
   <script>
     // Prevenir tooltips nativos del navegador
     document.querySelectorAll('#registerForm input[required]').forEach(function(input) {
@@ -66,6 +125,17 @@
         e.preventDefault();
       });
     });
+    
+    // Auto-ocultar mensaje de éxito después de 8 segundos
+    const successMessage = document.getElementById('success-message');
+    if (successMessage) {
+      setTimeout(function() {
+        successMessage.classList.add('fade-out');
+        setTimeout(function() {
+          successMessage.style.display = 'none';
+        }, 500);
+      }, 8000);
+    }
 
     document.getElementById('registerForm').addEventListener('submit', function(e) {
       e.preventDefault();

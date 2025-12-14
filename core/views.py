@@ -96,15 +96,42 @@ def register_page(request):
         if Usuario.objects.filter(email=email).exists():
             return render(request, 'core/register.html', {'error': 'Este correo electrónico ya está registrado'})
         
+        # Generar token de verificación
+        token = secrets.token_urlsafe(32)
+        fecha_expiracion = timezone.now() + timedelta(hours=24)
         
         usuario = Usuario.objects.create(
             email=email,
             nombre=nombre,
             password=make_password(password),
+            email_verificado=False,
+            token_verificacion=token,
+            fecha_token=fecha_expiracion,
+            is_active=False,  # No activo hasta verificar email
         )
-        login(request, usuario)
-        # Redirigir a selección de plan después del registro
-        return redirect('select_plan')
+        
+        # Enviar correo de verificación
+        try:
+            verification_link = f'http://{request.get_host()}/verificar-email/{token}/'
+            send_mail(
+                'Verifica tu cuenta en DermaChat',
+                f'Hola {nombre},\n\n'
+                f'Gracias por registrarte en DermaChat. Por favor, verifica tu cuenta haciendo clic en el siguiente enlace:\n\n'
+                f'{verification_link}\n\n'
+                f'Este enlace expirará en 24 horas.\n\n'
+                f'Si no creaste esta cuenta, puedes ignorar este correo.\n\n'
+                f'Saludos,\nEl equipo de DermaChat',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+            # Mostrar mensaje de éxito en la misma página
+            return render(request, 'core/register.html', {'email_enviado': True, 'email': email})
+        except Exception as e:
+            # Si falla el envío, eliminar el usuario creado y mostrar error
+            usuario.delete()
+            return render(request, 'core/register.html', {'error': 'No se pudo enviar el correo de verificación. Por favor, intenta nuevamente.'})
+    
     return render(request, 'core/register.html')
 
 def login_usuario(request):
@@ -116,6 +143,10 @@ def login_usuario(request):
         usuario = authenticate(request, username=email, password=password)
 
         if usuario is not None:
+            # Verificar si el correo está verificado
+            if not usuario.email_verificado:
+                return JsonResponse({'error': 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.'}, status=400)
+            
             login(request, usuario)
             return JsonResponse({'redirect': '/'} )     
         else:
@@ -133,11 +164,9 @@ def verificar_email(request, token):
             usuario.fecha_token = None
             usuario.save()
             
-            # Redirigir a la página de login con mensaje de éxito
-            context = {
-                'nombre_usuario': usuario.nombre
-            }
-            return render(request, 'core/verificacion_exitosa.html', context)
+            # Hacer login automático y redirigir a selección de plan
+            login(request, usuario)
+            return redirect('select_plan')
         else:
             return render(request, 'core/token_expirado.html')
     except Usuario.DoesNotExist:
