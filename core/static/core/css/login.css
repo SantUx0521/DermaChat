@@ -190,39 +190,39 @@ input[type="submit"]:hover{
     height: 55px;
   }
 }
+@media (max-width: 750px) {
+    .main {
+        flex-direction: column;
+        width: 95%;
+        height: auto;
+        max-width: 500px; 
+        margin: 0 auto; 
+    }
 
-@media screen and (max-width: 580px) {
-  .top .fa-bars {
-    display: block; 
-  }
+    .main::before {
+        display: none; 
+    }
 
-  .nav .links {
-    display: none;
-  }
+    .right {
+        flex: none;
+        padding: 20px;
+        text-align: center; 
+    }
 
-  .main .center .search {
-    width: 350px;
-  }
+    .left {
+        display: none; 
+    }
 
-  /* Más pequeño aún */
-  .left img {
-    width: 45px;
-    height: 45px;
-  }
-}
+    .right h1 {
+        margin-bottom: 20px;
+    }
 
-@media screen and (max-width: 420px) {
-  .main .center .h1 {
-    font-size: 80px;
-  }
+    form .Username {
+        margin: 20px 0; 
+    }
 
-  .main .center .search {
-    width: 250px;
-  }
-
-  /* Tamaño mínimo para pantallas muy pequeñas */
-  .left img {
-    width: 35px;
-    height: 35px;
-  }
+    input[type="submit"] {
+        height: 45px;
+        font-size: 16px;
+    }
 }

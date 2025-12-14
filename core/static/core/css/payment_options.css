@@ -225,16 +225,21 @@ body {
 
 @media (max-width: 768px) {
     .payment-container {
+        font-size: 14px;
         margin-top: 80px;
         padding: 1rem;
     }
 
     .payment-header h1 {
-        font-size: 1.8rem;
+        font-size: 32px;
         flex-direction: column;
+    }
+    .payment-header .subtitle {
+        font-size: 16px;
     }
 
     .payment-content-simple {
+        font-size: 14px;
         padding: 1.5rem;
     }
 

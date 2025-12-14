@@ -263,7 +263,6 @@ body {
     }
     
     .form-actions {
-        flex-direction: column;
         align-items: center;
     }
     

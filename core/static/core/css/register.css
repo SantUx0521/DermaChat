@@ -207,3 +207,40 @@ input[type="submit"]:hover{
     width: 250px;
   }
 }
+
+@media (max-width: 750px) {
+    .main {
+        flex-direction: column;
+        width: 95%;
+        height: auto;
+        max-width: 500px; 
+        margin: 0 auto; 
+    }
+
+    .main::before {
+        display: none; 
+    }
+
+    .left {
+        flex: none;
+        padding: 20px;
+        text-align: center; 
+    }
+
+    .right {
+        display: none; 
+    }
+
+    .left h1 {
+        margin-bottom: 20px;
+    }
+
+    form .Username {
+        margin: 20px 0; 
+    }
+
+    input[type="submit"] {
+        height: 45px;
+        font-size: 16px;
+    }
+}
